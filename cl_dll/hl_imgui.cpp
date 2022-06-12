@@ -120,6 +120,8 @@ void HL_ImGUI_Deinit() {
 	}
 
 	SDL_DelEventWatch( HL_ImGUI_ProcessEvent, NULL );
+
+	ChapterSelectGUI_DeleteImageTextures();
 }
 
 void HL_ImGUI_Draw() {
@@ -140,5 +142,5 @@ void HL_ImGUI_Draw() {
 }
 
 int HL_ImGUI_ProcessEvent( void *data, SDL_Event* event ) {
-	return ImGui_ImplSdl_ProcessEvent( event );
+	return ImGui_ImplSdl_ProcessEvent( event ) ? 1 : 0;
 }

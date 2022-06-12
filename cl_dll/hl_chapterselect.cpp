@@ -11,12 +11,6 @@
 
 #include "hl_imgui.h"
 
-int g_iNumChapters = 0;
-int g_iNumPages = -1;
-int g_iCurPage = 0;
-int g_iSelectedChapter = -1;
-bool g_bMenuOpen = true;
-
 struct
 {
 	bool initialised{false};
@@ -140,6 +134,14 @@ void ChapterSelectGUI_LoadImageTextures()
 	}
 }
 
+void ChapterSelectGUI_DeleteImageTextures()
+{
+	for (int i = 0; i < g_iNumChapters; i++)
+	{
+		glDeleteTextures(1, &ch_info[i].texture);
+	}
+}
+
 int ChapterSelectGUI_WindowFlags()
 {
 	return ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_HorizontalScrollbar;
@@ -161,7 +163,8 @@ void ChapterSelectGUI_Init()
 	g_iNumPages = -1;
 	g_iCurPage = 0;
 	g_iSelectedChapter = -1;
-	g_bMenuOpen = true;
+	g_bMenuOpen = false;
+	g_iDifficulty = 0;
 
 	ChapterSelectGUI_LoadImageTextures();
 	ChapterSelectGUI_ParseChaptersFile();
@@ -215,6 +218,21 @@ void ChapterSelectGUI_DrawChapters()
 	ImGui::Columns(1, 0, false);
 }
 
+void ChapterSelectGUI_DrawDifficultyComboBox()
+{
+	const char* items[] = {"Easy", "Medium", "Hard"};
+	ImGui::TextColored(SelectedColor, "Difficulty: ");
+
+	ImGui::SameLine();
+
+	ImGui::PushItemWidth(ImGui::CalcTextSize("Medium").x * 1.7f);
+	if (ImGui::Combo("", &g_iDifficulty, items, 3, -1))
+	{
+		gEngfuncs.Cvar_SetValue("skill", g_iDifficulty);
+	}
+	ImGui::PopItemWidth();
+}
+
 void ChapterSelectGUI_DrawButtons()
 {
 	if (g_iCurPage > 0)
@@ -245,6 +263,9 @@ void ChapterSelectGUI_DrawButtons()
 	ImGui::Separator();
 	ImGui::Spacing();
 	ImGui::Spacing();
+
+	ChapterSelectGUI_DrawDifficultyComboBox();
+	ImGui::SameLine();
 
 	ImGui::SetCursorPosX((GAME_MODE_WINDOW_WIDTH - ImGui::CalcTextSize(ButtonText("Cancel")).x) * 0.964);
 	if (ImGui::Button(ButtonText("Cancel")) || ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Escape), false))
@@ -298,6 +319,9 @@ void ChapterSelectGUI_Draw()
 	ChapterSelectGUI_DrawChapters();
 	ImGui::NewLine();
 	ChapterSelectGUI_DrawButtons();
+
+
+
 
 	ImGui::End();
 

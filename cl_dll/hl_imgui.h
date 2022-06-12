@@ -18,6 +18,13 @@ const ImVec4 SelectedColor = ImVec4(0.78431372549f, 0.73f, 0.09215686274f, 1.0f)
 const int GAME_MODE_WINDOW_WIDTH = 895;
 const int GAME_MODE_WINDOW_HEIGHT = 340;
 
+inline int g_iNumChapters = 0;
+inline int g_iNumPages = -1;
+inline int g_iCurPage = 0;
+inline int g_iSelectedChapter = -1;
+inline bool g_bMenuOpen = true;
+inline int g_iDifficulty = 0;
+
 void HL_ImGUI_Init();
 void HL_ImGUI_Deinit();
 void HL_ImGUI_Draw();
@@ -26,5 +33,7 @@ int HL_ImGUI_ProcessEvent( void *data, SDL_Event* event );
 void ChapterSelectGUI_Init();
 void ChapterSelectGUI_Draw();
 void __CmdFunc_ChapterSelectGUI_ToggleMenu();
+void ChapterSelectGUI_DeleteImageTextures();
+
 
 #endif // HL_IMGUI_H
