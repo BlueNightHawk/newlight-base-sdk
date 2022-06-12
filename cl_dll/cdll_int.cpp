@@ -36,6 +36,12 @@
 #include "vgui_TeamFortressViewport.h"
 #include "filesystem_utils.h"
 
+#include "PlatformHeaders.h"
+
+#include "fs_aux.h"
+#include "cpp_aux.h"
+#include "hl_imgui.h"
+
 cl_enginefunc_t gEngfuncs;
 CHud gHUD;
 TeamFortressViewport* gViewPort = NULL;
@@ -126,6 +132,11 @@ int DLLEXPORT Initialize(cl_enginefunc_t* pEnginefuncs, int iVersion)
 	{
 		return 0;
 	}
+
+	FS_InitModule();
+	HL_ImGUI_Init();
+
+	gHUD.r_params.paused = 1;
 
 	// get tracker interface, if any
 	return 1;
@@ -238,6 +249,7 @@ Called by engine every frame that client .dll is loaded
 void DLLEXPORT HUD_Frame(double time)
 {
 	//	RecClHudFrame(time);
+	gHUD.m_binMainMenu = (((unsigned int)gEngfuncs.GetLocalPlayer()) <= 4098 && gEngfuncs.GetAbsoluteTime() - gHUD.r_params.time > 2.0f) != 0;
 
 	GetClientVoiceMgr()->Frame(time);
 }

@@ -64,6 +64,12 @@
     <Filter Include="Source Files\cl_dll\particleman">
       <UniqueIdentifier>{7085339d-2b33-4cdf-846c-0e4c7d33add8}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\imgui">
+      <UniqueIdentifier>{89c690a9-75e8-4a71-ac1f-81914fb67e5e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\cl_dll\newui">
+      <UniqueIdentifier>{819552be-2dee-4e24-b58e-064958f7a2ca}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\dlls\crossbow.cpp">
@@ -320,6 +326,27 @@
     </ClCompile>
     <ClCompile Include="..\..\cl_dll\particleman\CBaseParticle.cpp">
       <Filter>Source Files\cl_dll\particleman</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\imgui\imgui.cpp">
+      <Filter>Source Files\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\imgui\imgui_demo.cpp">
+      <Filter>Source Files\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\imgui\imgui_draw.cpp">
+      <Filter>Source Files\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\imgui\imgui_impl_sdl.cpp">
+      <Filter>Source Files\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\cl_dll\hl_imgui.cpp">
+      <Filter>Source Files\cl_dll\newui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\game_shared\fs_aux.cpp">
+      <Filter>Source Files\cl_dll\newui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\cl_dll\hl_chapterselect.cpp">
+      <Filter>Source Files\cl_dll\newui</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

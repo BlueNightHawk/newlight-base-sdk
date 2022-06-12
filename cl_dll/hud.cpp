@@ -30,6 +30,9 @@
 #include "demo_api.h"
 #include "vgui_ScorePanel.h"
 
+#include "PlatformHeaders.h"
+#include "hl_imgui.h"
+
 hud_player_info_t g_PlayerInfoList[MAX_PLAYERS_HUD + 1];	// player info from the engine
 extra_player_info_t g_PlayerExtraInfo[MAX_PLAYERS_HUD + 1]; // additional player info sent directly to the client dll
 
@@ -296,6 +299,7 @@ void CHud::Init()
 	HOOK_COMMAND("-commandmenu", CloseCommandMenu);
 	HOOK_COMMAND("ForceCloseCommandMenu", ForceCloseCommandMenu);
 	HOOK_COMMAND("special", InputPlayerSpecial);
+	HOOK_COMMAND("togglechapterselect", ChapterSelectGUI_ToggleMenu);
 
 	HOOK_MESSAGE(ValClass);
 	HOOK_MESSAGE(TeamNames);

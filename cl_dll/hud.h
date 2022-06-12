@@ -606,6 +606,10 @@ public:
 	void AddHudElem(CHudBase* p);
 
 	float GetSensitivity();
+
+public:
+	ref_params_s r_params;
+	bool m_binMainMenu;
 };
 
 extern CHud gHUD;
