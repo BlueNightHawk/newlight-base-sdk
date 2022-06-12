@@ -42,6 +42,10 @@
 #include "UserMessages.h"
 #include "client.h"
 
+#include <string>
+#include <ctime>
+#include <sstream>
+
 // #define DUCKFIX
 
 extern void CopyToBodyQue(entvars_t* pev);
@@ -110,6 +114,8 @@ TYPEDESCRIPTION CBasePlayer::m_playerSaveData[] =
 		DEFINE_FIELD(CBasePlayer, m_hViewEntity, FIELD_EHANDLE),
 		DEFINE_FIELD(CBasePlayer, m_iHideHUD, FIELD_INTEGER),
 		DEFINE_FIELD(CBasePlayer, m_iFOV, FIELD_INTEGER),
+
+		DEFINE_ARRAY(CBasePlayer, m_fmodSaveName, FIELD_CHARACTER, FMOD_SAVE_LENGTH)
 
 		//DEFINE_FIELD( CBasePlayer, m_fDeadTime, FIELD_FLOAT ), // only used in multiplayer games
 		//DEFINE_FIELD( CBasePlayer, m_fGameHUDInitialized, FIELD_INTEGER ), // only used in multiplayer games
@@ -2908,6 +2914,25 @@ bool CBasePlayer::Save(CSave& save)
 	if (!CBaseMonster::Save(save))
 		return false;
 
+// Get string representation of UNIX time
+	std::time_t time = std::time(0);
+	std::stringstream ss;
+	ss << time;
+	std::string ts = ss.str();
+
+	// Get game directory
+	char gamedir[64];
+	GET_GAME_DIR(gamedir);
+
+	// Create the save name string and copy it to the member field
+	std::string fmod_save_name = std::string(gamedir) + std::string("/SAVE/") + std::string("fmod") + ts + ".fsv";
+	strncpy(this->m_fmodSaveName, fmod_save_name.c_str(), FMOD_SAVE_LENGTH - 1);
+
+	// Tell fmod on the clientside to save
+	MESSAGE_BEGIN(MSG_ALL, gmsgFmodSave, NULL);
+	WRITE_STRING(this->m_fmodSaveName);
+	MESSAGE_END();
+
 	return save.WriteFields("PLAYER", this, m_playerSaveData, ARRAYSIZE(m_playerSaveData));
 }
 
@@ -2985,6 +3010,8 @@ bool CBasePlayer::Restore(CRestore& restore)
 	m_bResetViewEntity = true;
 
 	m_bRestored = true;
+
+	m_fmodNeedRestore = true;
 
 	return status;
 }
@@ -3853,6 +3880,20 @@ void CBasePlayer::UpdateClientData()
 		MESSAGE_BEGIN(MSG_ONE, gmsgResetHUD, NULL, pev);
 		WRITE_BYTE(0);
 		MESSAGE_END();
+
+		// Tell client's Fmod instance to cache all the sounds for the level before gameplay starts
+		MESSAGE_BEGIN(MSG_ONE, gmsgFmodCache, NULL, pev);
+		MESSAGE_END();
+		// TODO: Make sure this doesn't happen when this gets called for, say, removing the HEV suit
+
+		if (m_fmodNeedRestore)
+		{
+			// Tell fmod on the clientside to load
+			MESSAGE_BEGIN(MSG_ONE, gmsgFmodLoad, NULL, pev);
+			WRITE_STRING(this->m_fmodSaveName);
+			MESSAGE_END();
+			m_fmodNeedRestore = false;
+		}
 
 		if (!m_fGameHUDInitialized)
 		{

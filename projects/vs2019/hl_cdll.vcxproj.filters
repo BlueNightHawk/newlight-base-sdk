@@ -70,6 +70,9 @@
     <Filter Include="Source Files\cl_dll\newui">
       <UniqueIdentifier>{819552be-2dee-4e24-b58e-064958f7a2ca}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\cl_dll\fmod">
+      <UniqueIdentifier>{54c1e580-8c6a-495b-80fe-8dfca037192c}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\dlls\crossbow.cpp">
@@ -347,6 +350,12 @@
     </ClCompile>
     <ClCompile Include="..\..\cl_dll\hl_chapterselect.cpp">
       <Filter>Source Files\cl_dll\newui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\cl_dll\fmod_manager.cpp">
+      <Filter>Source Files\cl_dll\fmod</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\cl_dll\fmod_player.cpp">
+      <Filter>Source Files\cl_dll\fmod</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

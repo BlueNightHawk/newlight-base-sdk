@@ -42,6 +42,8 @@
 #include "cpp_aux.h"
 #include "hl_imgui.h"
 
+#include "fmod_manager.h"
+
 cl_enginefunc_t gEngfuncs;
 CHud gHUD;
 TeamFortressViewport* gViewPort = NULL;
@@ -135,6 +137,11 @@ int DLLEXPORT Initialize(cl_enginefunc_t* pEnginefuncs, int iVersion)
 
 	FS_InitModule();
 	HL_ImGUI_Init();
+
+	if (!Fmod_Init())
+	{
+		return 0;
+	}
 
 	gHUD.r_params.paused = 1;
 
@@ -250,6 +257,8 @@ void DLLEXPORT HUD_Frame(double time)
 {
 	//	RecClHudFrame(time);
 	gHUD.m_binMainMenu = (((unsigned int)gEngfuncs.GetLocalPlayer()) <= 4098 && gEngfuncs.GetAbsoluteTime() - gHUD.r_params.time > 2.0f) != 0;
+
+	Fmod_Update();
 
 	GetClientVoiceMgr()->Frame(time);
 }

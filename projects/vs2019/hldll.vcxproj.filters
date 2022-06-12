@@ -46,6 +46,9 @@
     <Filter Include="Header Files\public">
       <UniqueIdentifier>{ccda2445-0302-44ae-a537-be89f5811329}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\dlls\fmod">
+      <UniqueIdentifier>{5d8bc7ef-b5d0-4dc7-b0e1-db9ff71ff39b}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\dlls\aflock.cpp">
@@ -365,6 +368,15 @@
     </ClCompile>
     <ClCompile Include="..\..\public\interface.cpp">
       <Filter>Source Files\public</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\dlls\fmod_ambient.cpp">
+      <Filter>Source Files\dlls\fmod</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\dlls\fmod_reverb.cpp">
+      <Filter>Source Files\dlls\fmod</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\dlls\fmod_track.cpp">
+      <Filter>Source Files\dlls\fmod</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

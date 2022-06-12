@@ -30,6 +30,10 @@
 #include <ctype.h>	// isspace
 
 #ifdef CLIENT_DLL
+#include "fmod_manager.h"
+#endif
+
+#ifdef CLIENT_DLL
 // Spectator Mode
 bool iJumpSpectator;
 float vJumpOrigin[3];
@@ -3384,6 +3388,14 @@ void PM_Move(struct playermove_s* ppmove, qboolean server)
 	{
 		pmove->friction = 1.0f;
 	}
+#ifdef CLIENT_DLL
+	FMOD_VECTOR pos = _Fmod_HLVecToFmodVec(pmove->origin);
+	FMOD_VECTOR vel = _Fmod_HLVecToFmodVec(pmove->velocity);
+	FMOD_VECTOR forward = _Fmod_HLVecToFmodVec(pmove->forward);
+	FMOD_VECTOR up = _Fmod_HLVecToFmodVec(pmove->up);
+
+	Fmod_Update_Listener_Position(&pos, &vel, NULL, NULL);
+#endif
 }
 
 int PM_GetVisEntInfo(int ent)

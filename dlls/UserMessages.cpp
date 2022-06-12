@@ -65,4 +65,15 @@ void LinkUserMessages()
 	gmsgStatusValue = REG_USER_MSG("StatusValue", 3);
 
 	gmsgWeapons = REG_USER_MSG("Weapons", 8);
+
+	gmsgFmodAmb = REG_USER_MSG("FmodAmb", -1);
+	gmsgFmodTrk = REG_USER_MSG("FmodTrk", -1);
+	gmsgFmodPause = REG_USER_MSG("FmodPause", -1);
+	gmsgFmodCache = REG_USER_MSG("FmodCache", 0);
+	gmsgFmodSeek = REG_USER_MSG("FmodSeek", -1);
+
+	gmsgFmodSave = REG_USER_MSG("FmodSave", -1);
+	gmsgFmodLoad = REG_USER_MSG("FmodLoad", -1);
+
+	gmsgFmodRev = REG_USER_MSG("FmodRev", 11);
 }

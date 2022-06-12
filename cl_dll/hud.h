@@ -480,6 +480,26 @@ private:
 //-----------------------------------------------------
 //
 
+class CHudFmodPlayer : public CHudBase
+{
+public:
+	bool Init() override;
+	bool VidInit() override;
+	bool Draw(float flTime) override;
+	void Reset() override;
+	bool MsgFunc_FmodCache(const char* pszName, int iSize, void* pbuf);
+	bool MsgFunc_FmodAmb(const char* pszName, int iSize, void* pbuf);
+	bool MsgFunc_FmodTrk(const char* pszName, int iSize, void* pbuf);
+	bool MsgFunc_FmodPause(const char* pszName, int iSize, void* pbuf);
+	bool MsgFunc_FmodSeek(const char* pszName, int iSize, void* pbuf);
+	bool MsgFunc_FmodSave(const char* pszName, int iSize, void* pbuf);
+	bool MsgFunc_FmodLoad(const char* pszName, int iSize, void* pbuf);
+	bool MsgFunc_FmodRev(const char* pszName, int iSize, void* pbuf);
+};
+
+//
+//-----------------------------------------------------
+//
 
 class CHud
 {
@@ -571,6 +591,8 @@ public:
 	CHudAmmoSecondary m_AmmoSecondary;
 	CHudTextMessage m_TextMessage;
 	CHudStatusIcons m_StatusIcons;
+
+	CHudFmodPlayer m_Fmod;
 
 	void Init();
 	void VidInit();

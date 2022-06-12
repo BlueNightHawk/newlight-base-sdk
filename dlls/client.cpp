@@ -588,6 +588,24 @@ void ClientCommand(edict_t* pEntity)
 	{
 		// MenuSelect returns true only if the command is properly handled,  so don't print a warning
 	}
+	else if (FStrEq(pcmd, "fplay"))
+	{
+		MESSAGE_BEGIN(MSG_ONE, gmsgFmodTrk, nullptr, player->pev);
+		WRITE_STRING((char*)CMD_ARGV(1));
+		WRITE_BYTE(0);
+		WRITE_COORD(CVAR_GET_FLOAT("MP3Volume"));
+		WRITE_COORD(1);
+		MESSAGE_END();
+	}
+	else if (FStrEq(pcmd, "fstop"))
+	{
+		MESSAGE_BEGIN(MSG_ONE, gmsgFmodTrk, nullptr, player->pev);
+		WRITE_STRING("");
+		WRITE_BYTE(0);
+		WRITE_COORD(0);
+		WRITE_COORD(0);
+		MESSAGE_END();
+	}
 	else
 	{
 		// tell the user they entered an unknown command

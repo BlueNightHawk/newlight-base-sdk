@@ -20,6 +20,8 @@
 #include "hltv.h"
 #include "Exports.h"
 
+#include "fmod_manager.h"
+
 int CL_IsThirdPerson();
 void CL_CameraOffset(float* ofs);
 
@@ -1640,7 +1642,8 @@ void DLLEXPORT V_CalcRefdef(struct ref_params_s* pparams)
 	}
 
 	memcpy(&gHUD.r_params, pparams, sizeof(ref_params_s));
-
+	
+	Fmod_Think(pparams);
 	/*
 // Example of how to overlay the whole screen with red at 50 % alpha
 #define SF_TEST

@@ -71,7 +71,7 @@
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>..\..\utils\vgui\lib\win32_vc6\vgui.lib;wsock32.lib;..\..\lib\public\sdl2.lib;opengl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>..\..\utils\vgui\lib\win32_vc6\vgui.lib;wsock32.lib;..\..\lib\public\sdl2.lib;..\..\lib\public\fmod_vc.lib;opengl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <BaseAddress>
       </BaseAddress>
     </Link>
@@ -126,6 +126,8 @@
     <ClCompile Include="..\..\cl_dll\ev_common.cpp" />
     <ClCompile Include="..\..\cl_dll\ev_hldm.cpp" />
     <ClCompile Include="..\..\cl_dll\flashlight.cpp" />
+    <ClCompile Include="..\..\cl_dll\fmod_manager.cpp" />
+    <ClCompile Include="..\..\cl_dll\fmod_player.cpp" />
     <ClCompile Include="..\..\cl_dll\GameStudioModelRenderer.cpp" />
     <ClCompile Include="..\..\cl_dll\geiger.cpp" />
     <ClCompile Include="..\..\cl_dll\health.cpp" />

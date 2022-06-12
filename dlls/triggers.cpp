@@ -652,6 +652,38 @@ void CTriggerMonsterJump::Touch(CBaseEntity* pOther)
 	pev->nextthink = gpGlobals->time;
 }
 
+const char* tracklist[] = {
+	// make standard cdaudio playlist
+	"blank",
+	"Half-Life01.mp3",
+	"Prospero01.mp3",
+	"Half-Life12.mp3",
+	"Half-Life07.mp3",
+	"Half-Life10.mp3",
+	"Suspense01.mp3",
+	"Suspense03.mp3",
+	"Half-Life09.mp3",
+	"Half-Life02.mp3",
+	"Half-Life13.mp3",
+	"Half-Life04.mp3",
+	"Half-Life15.mp3",
+	"Half-Life14.mp3",
+	"Half-Life16.mp3",
+	"Suspense02.mp3",
+	"Half-Life03.mp3",
+	"Half-Life08.mp3",
+	"Prospero02.mp3",
+	"Half-Life05.mp3",
+	"Prospero04.mp3",
+	"Half-Life11.mp3",
+	"Half-Life06.mp3",
+	"Prospero03.mp3",
+	"Half-Life17.mp3",
+	"Prospero05.mp3",
+	"Suspense05.mp3",
+	"Suspense07.mp3",
+};
+
 
 //=====================================
 //
@@ -712,13 +744,14 @@ void PlayCDTrack(int iTrack)
 
 	if (iTrack == -1)
 	{
-		CLIENT_COMMAND(pClient, "cd stop\n");
+		CLIENT_COMMAND(pClient, "fstop\n");
 	}
 	else
 	{
+		extern int gmsgFmodTrk;
 		char string[64];
 
-		sprintf(string, "cd play %3d\n", iTrack);
+		sprintf(string, "fplay media\\%s\n", tracklist[iTrack-1]);
 		CLIENT_COMMAND(pClient, string);
 	}
 }
