@@ -495,6 +495,8 @@ public:
 	bool MsgFunc_FmodSave(const char* pszName, int iSize, void* pbuf);
 	bool MsgFunc_FmodLoad(const char* pszName, int iSize, void* pbuf);
 	bool MsgFunc_FmodRev(const char* pszName, int iSize, void* pbuf);
+
+	void PlayAmbSound(const char* sample, bool looping, Vector pos, float volume, float min_atten, float max_atten, float pitch, Vector vel = Vector(0,0,0));
 };
 
 //

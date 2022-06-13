@@ -16,6 +16,12 @@
 // sound.cpp
 //=========================================================
 
+#include <algorithm>
+#include <array>
+#include <iostream>
+#include <functional>
+#include <filesystem>
+
 #include "extdll.h"
 #include "util.h"
 #include "cbase.h"
@@ -25,6 +31,8 @@
 #include "gamerules.h"
 #include "pm_defs.h"
 #include "pm_shared.h"
+
+#include "UserMessages.h"
 
 static char* memfgets(byte* pMemFile, int fileSize, int& filePos, char* pBuffer, int bufferSize);
 
@@ -1456,7 +1464,29 @@ void EMIT_SOUND_DYN(edict_t* entity, int channel, const char* sample, float volu
 			ALERT(at_aiconsole, "Unable to find %s in sentences.txt\n", sample);
 	}
 	else
+	{
+#ifdef HD_TEST
+		Vector pos = CBaseEntity::Instance(entity)->Center();
+
+		char out[256];
+		sprintf(out,"sound/%s", sample);
+		std::string path = out;
+		std::replace(path.begin(), path.end(), '/', '\\');
+
+		MESSAGE_BEGIN(MSG_ALL, gmsgFmodAmb);
+		WRITE_STRING(path.c_str());
+		WRITE_BYTE(0);
+		WRITE_COORD(pos.x);
+		WRITE_COORD(pos.y);
+		WRITE_COORD(pos.z);
+		WRITE_COORD(1.0);	// Default: 1.0
+		WRITE_COORD(40.0); // Default: 40.0
+		WRITE_COORD(40000.0);		// Default: 40000.0
+		WRITE_COORD(pitch / 100);		// Default: 1.0 (2.0 = one octave up, 0.5 = one octave down)
+		MESSAGE_END();
+#endif
 		EMIT_SOUND_DYN2(entity, channel, sample, volume, attenuation, flags, pitch);
+	}
 }
 
 void EMIT_SOUND_PREDICTED(edict_t* entity, int channel, const char* sample, float volume, float attenuation,

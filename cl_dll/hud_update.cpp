@@ -16,6 +16,8 @@
 //  hud_update.cpp
 //
 
+#include <cmath>
+
 #include "hud.h"
 #include "cl_util.h"
 #include <stdlib.h>
@@ -41,7 +43,7 @@ bool CHud::UpdateClientData(client_data_t* cdata, float time)
 
 	Think();
 
-	cdata->fov = m_iFOV;
+	cdata->fov = std::lerp(cdata->fov,(float)m_iFOV, (float)gHUD.m_flTimeDelta * 10.0f);
 
 	v_idlescale = m_iConcussionEffect;
 

@@ -1,4 +1,5 @@
 // view/refresh setup functions
+#include <cmath>
 
 #include "hud.h"
 #include "cl_util.h"
@@ -91,6 +92,9 @@ cvar_t* cl_bobup;
 cvar_t* cl_waterdist;
 cvar_t* cl_chasedist;
 
+cvar_t* cl_viewlagscale;
+cvar_t* cl_viewlagspeed;
+
 // These cvars are not registered (so users can't cheat), so set the ->value field directly
 // Register these cvars in V_Init() if needed for easy tweaking
 cvar_t v_iyaw_cycle = {"v_iyaw_cycle", "2", 0, 2};
@@ -161,28 +165,34 @@ void V_InterpolateAngles( float *start, float *end, float *output, float frac )
 } */
 
 // Quakeworld bob code, this fixes jitters in the mutliplayer since the clock (pparams->time) isn't quite linear
-float V_CalcBob(struct ref_params_s* pparams)
+struct
 {
-	static double bobtime = 0;
-	static float bob = 0;
+	float bob[2];
+
+	double bobtime[2];
+	double lasttime[2];
+} viewbob;
+
+void V_CalcBob(struct ref_params_s* pparams, int dir, float freqmod)
+{
+	float bob = 0.0f;
 	float cycle;
-	static float lasttime = 0;
 	Vector vel;
 
-
-	if (pparams->onground == -1 ||
-		pparams->time == lasttime)
+	if (pparams->onground < 1 ||
+		pparams->time == viewbob.lasttime[dir])
 	{
 		// just use old value
-		return bob;
+		viewbob.bob[dir] = std::lerp(viewbob.bob[dir], 0, pparams->frametime * 20.0f);
+		return;
 	}
 
-	lasttime = pparams->time;
+	viewbob.lasttime[dir] = pparams->time;
 
 	//TODO: bobtime will eventually become a value so large that it will no longer behave properly.
 	//Consider resetting the variable if a level change is detected (pparams->time < lasttime might do the trick).
-	bobtime += pparams->frametime;
-	cycle = bobtime - (int)(bobtime / cl_bobcycle->value) * cl_bobcycle->value;
+	viewbob.bobtime[dir] += pparams->frametime * freqmod;
+	cycle = viewbob.bobtime[dir] - (int)(viewbob.bobtime[dir] / cl_bobcycle->value) * cl_bobcycle->value;
 	cycle /= cl_bobcycle->value;
 
 	if (cycle < cl_bobup->value)
@@ -199,11 +209,12 @@ float V_CalcBob(struct ref_params_s* pparams)
 	VectorCopy(pparams->simvel, vel);
 	vel[2] = 0;
 
-	bob = sqrt(vel[0] * vel[0] + vel[1] * vel[1]) * cl_bob->value;
+    bob = sqrt(vel[0] * vel[0] + vel[1] * vel[1]) * cl_bob->value;
 	bob = bob * 0.3 + bob * 0.7 * sin(cycle);
 	bob = V_min(bob, 4);
 	bob = V_max(bob, -7);
-	return bob;
+
+	viewbob.bob[dir] = std::lerp(viewbob.bob[dir], bob, pparams->frametime * 20.0f);
 }
 
 /*
@@ -467,6 +478,70 @@ void V_CalcIntermissionRefdef(struct ref_params_s* pparams)
 	v_angles = pparams->viewangles;
 }
 
+void V_CalcViewModelLag(ref_params_t* pparams, cl_entity_s *view)
+{
+	const float m_flWeaponLag = 1.5f;
+	float flSpeed = cl_viewlagspeed->value;
+	float flScale = cl_viewlagscale->value;
+
+	static Vector m_vecLastFacing;
+	Vector vOriginalOrigin = view->origin;
+	Vector vOriginalAngles = view->angles;
+
+	// Calculate our drift
+	Vector forward, right, up;
+	AngleVectors(InvPitch(view->angles), forward, right, up);
+
+	if (pparams->frametime != 0.0f) // not in paused
+	{
+		Vector vDifference;
+
+		vDifference = forward - m_vecLastFacing;
+
+		// If we start to lag too far behind, we'll increase the "catch up" speed.
+		// Solves the problem with fast cl_yawspeed, m_yaw or joysticks rotating quickly.
+		// The old code would slam lastfacing with origin causing the viewmodel to pop to a new position
+		float flDiff = vDifference.Length();
+		if ((flDiff > m_flWeaponLag) && (m_flWeaponLag > 0.0f))
+		{
+			float flScale = flDiff / m_flWeaponLag;
+			flSpeed *= flScale;
+		}
+
+		// FIXME:  Needs to be predictable?
+		m_vecLastFacing = m_vecLastFacing + vDifference * (flSpeed * pparams->frametime);
+		// Make sure it doesn't grow out of control!!!
+		m_vecLastFacing = m_vecLastFacing.Normalize();
+		view->origin = view->origin + (vDifference * -1.0f) * flScale;
+	}
+
+	AngleVectors(InvPitch(vOriginalAngles), forward, right, up);
+
+	float pitch = -vOriginalAngles[PITCH];
+
+	if (pitch > 180.0f)
+	{
+		pitch -= 360.0f;
+	}
+	else if (pitch < -180.0f)
+	{
+		pitch += 360.0f;
+	}
+
+	if (m_flWeaponLag <= 0.0f)
+	{
+		view->origin = vOriginalOrigin;
+		view->angles = vOriginalAngles;
+	}
+	else
+	{
+		// FIXME: These are the old settings that caused too many exposed polys on some models
+		view->origin = view->origin + forward * (-pitch * 0.005f);
+		view->origin = view->origin + right * (-pitch * 0.003f);
+		view->origin = view->origin + up * (-pitch * 0.002f);
+	}
+}
+
 #define ORIGIN_BACKUP 64
 #define ORIGIN_MASK (ORIGIN_BACKUP - 1)
 
@@ -493,7 +568,7 @@ void V_CalcNormalRefdef(struct ref_params_s* pparams)
 	cl_entity_t *ent, *view;
 	int i;
 	Vector angles;
-	float bob, waterOffset;
+	float waterOffset;
 	static viewinterp_t ViewInterp;
 
 	static float oldz = 0;
@@ -517,13 +592,8 @@ void V_CalcNormalRefdef(struct ref_params_s* pparams)
 	// view is the weapon model (only visible from inside body )
 	view = gEngfuncs.GetViewModel();
 
-	// transform the view offset by the model's matrix to get the offset from
-	// model origin for the view
-	bob = V_CalcBob(pparams);
-
 	// refresh position
 	VectorCopy(pparams->simorg, pparams->vieworg);
-	pparams->vieworg[2] += (bob);
 	VectorAdd(pparams->vieworg, pparams->viewheight, pparams->vieworg);
 
 	VectorCopy(pparams->cl_viewangles, pparams->viewangles);
@@ -652,21 +722,18 @@ void V_CalcNormalRefdef(struct ref_params_s* pparams)
 	// Let the viewmodel shake at about 10% of the amplitude
 	gEngfuncs.V_ApplyShake(view->origin, view->angles, 0.9);
 
+	V_CalcBob(pparams, 0, 0.75f); // right
+	V_CalcBob(pparams, 1, 1.50f);	// up
+
+	V_CalcViewModelLag(pparams, view);
+
 	for (i = 0; i < 3; i++)
 	{
-		view->origin[i] += bob * 0.4 * pparams->forward[i];
+		view->origin[i] += viewbob.bob[0] * 0.33 * pparams->right[i];
+		view->origin[i] += viewbob.bob[1] * 0.17 * pparams->up[i];
 	}
-	view->origin[2] += bob;
 
-	// throw in a little tilt.
-	view->angles[YAW] -= bob * 0.5;
-	view->angles[ROLL] -= bob * 1;
-	view->angles[PITCH] -= bob * 0.3;
-
-	if (0 != cl_bobtilt->value)
-	{
-		VectorCopy(view->angles, view->curstate.angles);
-	}
+	VectorCopy(view->angles, view->curstate.angles);
 
 	// pushing the view origin down off of the same X/Z plane as the ent's origin will give the
 	// gun a very nice 'shifting' effect when the player looks up/down. If there is a problem
@@ -1713,6 +1780,10 @@ void V_Init()
 	cl_bobup = gEngfuncs.pfnRegisterVariable("cl_bobup", "0.5", 0);
 	cl_waterdist = gEngfuncs.pfnRegisterVariable("cl_waterdist", "4", 0);
 	cl_chasedist = gEngfuncs.pfnRegisterVariable("cl_chasedist", "112", 0);
+
+
+	cl_viewlagscale = gEngfuncs.pfnRegisterVariable("cl_viewlagscale", "2", FCVAR_ARCHIVE);
+	cl_viewlagspeed = gEngfuncs.pfnRegisterVariable("cl_viewlagspeed", "2", FCVAR_ARCHIVE);
 }
 
 

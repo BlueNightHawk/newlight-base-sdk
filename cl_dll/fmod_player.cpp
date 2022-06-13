@@ -557,6 +557,81 @@ bool CHudFmodPlayer::MsgFunc_FmodSeek(const char* pszName, int iSize, void* pbuf
 	return true;
 }
 
+void CHudFmodPlayer::PlayAmbSound(const char* sample, bool looping, Vector pos, float volume, float min_atten, float max_atten, float pitch, Vector vvel)
+{
+	std::string msg = std::string(sample);
+
+	FMOD_VECTOR fmod_pos = _Fmod_HLVecToFmodVec(pos);
+
+	// TODO: sanitize inputs
+
+	FMOD_VECTOR vel;
+	vel.x = vvel.x;
+	vel.y = vvel.y;
+	vel.z = vvel.z;
+	std::string channel_name = msg.substr(0, msg.find('\n'));
+	std::string sound_path = msg.substr(msg.find('\n') + 1, std::string::npos);
+
+	FMOD::Sound* sound = NULL;
+	FMOD::Channel* channel = NULL;
+
+	// TODO: Separate finding the sound into its own function
+	auto sound_iter = fmod_cached_sounds.find(sound_path);
+
+	if (sound_iter == fmod_cached_sounds.end())
+	{
+		_Fmod_Report("WARNING", "Entity " + channel_name + " playing uncached sound " + sound_path +
+									". Add the sound to your [MAPNAME].bsp_soundcache.txt file.");
+		_Fmod_Report("INFO", "Attempting to cache and play sound " + sound_path);
+		sound = Fmod_CacheSound(sound_path.c_str(), false);
+		if (!sound)
+			return; // Error will be reported by Fmod_CacheSound
+	}
+	else
+		sound = sound_iter->second;
+
+	// Non-looping sounds need a new channel every time they play
+	// TODO: Consider destroying the old channel with the same name.
+	// Right now, if an fmod_ambient is triggered before it finishes playing, it'll play twice (offset by the time between triggers).
+	// If we destroy the old channel with the same name, it'll stop playback of the old channel before playing the new channel.
+	if (!looping)
+	{
+		channel = Fmod_CreateChannel(sound, channel_name.c_str(), fmod_sfx_group, false, volume);
+		if (!channel)
+			return; // TODO: Report warning about failure to play here
+
+		channel->set3DAttributes(&fmod_pos, &vel);
+		channel->set3DMinMaxDistance(min_atten, max_atten);
+		channel->setPitch(pitch);
+		channel->setPaused(false);
+	}
+
+	// If looping, find the existing channel
+	else
+	{
+		auto channel_iter = fmod_channels.find(channel_name);
+
+		if (channel_iter == fmod_channels.end())
+		{
+			// TODO: send looping and volume info from entity
+			channel = Fmod_CreateChannel(sound, channel_name.c_str(), fmod_sfx_group, true, volume);
+			if (!channel)
+				return; // TODO: Report warning about failure to play here
+		}
+		else
+			channel = channel_iter->second;
+
+		channel->set3DAttributes(&fmod_pos, &vel);
+		channel->set3DMinMaxDistance(min_atten, max_atten);
+		channel->setPitch(pitch);
+
+		// When a looping fmod_ambient gets used, by default it'll flip the status of paused
+		bool paused = false;
+		channel->getPaused(&paused);
+		channel->setPaused(!paused);
+	}
+}
+
 bool CHudFmodPlayer::VidInit() { return true; }
 bool CHudFmodPlayer::Draw(float flTime) { return true; }
 void CHudFmodPlayer::Reset() { return; }
