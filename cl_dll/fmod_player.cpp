@@ -444,7 +444,13 @@ bool CHudFmodPlayer::MsgFunc_FmodTrk(const char* pszName, int iSize, void* pbuf)
 		_Fmod_Report("WARNING", "Attempting to play track " + sound_path + " without caching it. Add it to your tracks.txt!");
 		_Fmod_Report("INFO", "Attempting to cache and play track " + sound_path);
 		sound = Fmod_CacheSound(sound_path.c_str(), true);
-		if (!sound) return false; // Error will be reported by Fmod_CacheSound
+		if (!sound)
+		{
+			sound_path = "../valve/" + sound_path;
+			sound = Fmod_CacheSound(sound_path.c_str(), true);
+			if (!sound)
+				return false; // Error will be reported by Fmod_CacheSound
+		}
 	}
 	else sound = sound_iter->second;
 
