@@ -1138,7 +1138,7 @@ COM_Parse
 Parse a token out of a string
 ==============
 */
-char* COM_Parse(char* data)
+char* COM_Parse(char* data, char *com_token)
 {
 	int c;
 	int len;
@@ -1259,7 +1259,7 @@ bool ReloadMapCycleFile(char* filename, mapcycle_t* cycle)
 			hasbuffer = false;
 			memset(szBuffer, 0, MAX_RULE_BUFFER);
 
-			pFileList = COM_Parse(pFileList);
+			pFileList = COM_Parse(pFileList, com_token);
 			if (strlen(com_token) <= 0)
 				break;
 
@@ -1268,7 +1268,7 @@ bool ReloadMapCycleFile(char* filename, mapcycle_t* cycle)
 			// Any more tokens on this line?
 			if (COM_TokenWaiting(pFileList))
 			{
-				pFileList = COM_Parse(pFileList);
+				pFileList = COM_Parse(pFileList, com_token);
 				if (strlen(com_token) > 0)
 				{
 					hasbuffer = true;

@@ -2779,7 +2779,7 @@ ReturnSpot:
 
 void CBasePlayer::Spawn()
 {
-	m_bIsSpawning = true;
+	m_bIsSpawning = m_bSpawnCheck = true;
 
 	//Make sure this gets reset even if somebody adds an early return or throws an exception.
 	const CallOnDestroy resetIsSpawning{[this]()
@@ -3252,7 +3252,7 @@ void CBasePlayer::GiveNamedItem(const char* pszName)
 	pent = CREATE_NAMED_ENTITY(istr);
 	if (FNullEnt(pent))
 	{
-		ALERT(at_console, "NULL Ent in GiveNamedItem!\n");
+		ALERT(at_console, "NULL Ent in GiveNamedItem! %s \n", pszName);
 		return;
 	}
 	VARS(pent)->origin = pev->origin;
@@ -3916,6 +3916,30 @@ void CBasePlayer::UpdateClientData()
 		InitStatusBar();
 	}
 
+	if (m_bSpawnCheck)
+	{
+		for (int i = 0; i < 32; i++)
+		{
+			if (strlen(g_chapterinfo[i].mapname) <= 0)
+				break;
+			if (stricmp(STRING(gpGlobals->mapname), g_chapterinfo[i].mapname))
+			{
+				continue;
+			}			
+			if (strlen(g_chapterinfo[i].weapons[0]) <= 0)
+			{
+				break;
+			}
+			for (int j = 0; j < 256; j++)
+			{
+				if (strlen(g_chapterinfo[i].weapons[j]) <= 0)
+					break;
+
+				GiveNamedItem(g_chapterinfo[i].weapons[j]);
+			}
+		}
+	}
+
 	if (m_iHideHUD != m_iClientHideHUD)
 	{
 		MESSAGE_BEGIN(MSG_ONE, gmsgHideWeapon, NULL, pev);
@@ -4161,6 +4185,8 @@ void CBasePlayer::UpdateClientData()
 
 	//Handled anything that needs resetting
 	m_bRestored = false;
+
+	m_bSpawnCheck = false;
 }
 
 

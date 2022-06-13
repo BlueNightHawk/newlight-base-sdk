@@ -450,6 +450,46 @@ cvar_t sk_player_leg2 = {"sk_player_leg2", "1"};
 cvar_t sk_player_leg3 = {"sk_player_leg3", "1"};
 
 // END Cvars for Skill Level settings
+chapterinfo_s g_chapterinfo[32];
+void SV_ParseChaptersFile()
+{
+	char *afile, *pfile;
+	char token[128];
+	int index = 0;
+
+	afile = pfile = (char*)LOAD_FILE_FOR_ME("resource/chapters.txt", nullptr);
+
+	if (!afile || !pfile)
+		return;
+
+	while (pfile = COM_Parse(pfile, token))
+	{
+		if (!stricmp(token, "title"))
+		{
+			pfile = COM_Parse(pfile, token);
+			pfile = COM_Parse(pfile, token);
+			strcpy(g_chapterinfo[index].mapname, token);
+
+			pfile = COM_Parse(pfile, token);
+			if (!stricmp(token, "{"))
+			{
+				int subindex = 0;
+				while (pfile = COM_Parse(pfile, token))
+				{
+					if (!stricmp(token, "}"))
+						break;
+					
+					strcpy(g_chapterinfo[index].weapons[subindex], token);
+					subindex++;
+				}
+			}
+			index++;
+		}
+	}
+
+	FREE_FILE(afile);
+	afile = pfile = nullptr;
+}
 
 // Register your console variables here
 // This gets called one time when the game is initialied
@@ -900,6 +940,8 @@ void GameDLLInit()
 	// END REGISTER CVARS FOR SKILL LEVEL STUFF
 
 	SERVER_COMMAND("exec skill.cfg\n");
+
+	SV_ParseChaptersFile();
 }
 
 void GameDLLShutdown()

@@ -591,3 +591,14 @@ struct CallOnDestroy
 		Function();
 	}
 };
+
+
+char* COM_Parse(char* data, char* com_token);
+
+typedef struct
+{
+	char mapname[32];
+	char weapons[256][64];
+} chapterinfo_s;
+
+extern chapterinfo_s g_chapterinfo[32];

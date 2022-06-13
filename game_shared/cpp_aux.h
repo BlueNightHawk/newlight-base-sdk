@@ -297,12 +297,13 @@ namespace aux {
 			std::discrete_distribution<> dis( values.begin(), values.end() );
 			return dis( gen );
 		}
-
+		#if 0
 		template<typename T>
 		inline T discreteChoice( const std::map<T, double> &choices ) {
 			std::discrete_distribution<> dis( values.begin(), values.end() );
 			return dis( gen );
 		}
+		#endif
 	}
 
 	namespace twitch {
