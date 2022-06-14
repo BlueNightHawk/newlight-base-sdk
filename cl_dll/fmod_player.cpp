@@ -152,6 +152,8 @@ bool CHudFmodPlayer::MsgFunc_FmodLoad(const char* pszName, int iSize, void* pbuf
 	BEGIN_READ(pbuf, iSize);
 	std::string filename = std::string(READ_STRING());
 
+	FMOD::Sound* current_track_sound = nullptr;
+
 	_Fmod_Report("INFO", "Loading the following file: " + filename);
 
 	bool mp3_paused = false;
@@ -183,11 +185,32 @@ bool CHudFmodPlayer::MsgFunc_FmodLoad(const char* pszName, int iSize, void* pbuf
 
 	if (it == fmod_tracks.end())
 	{
-		_Fmod_Report("ERROR", "Could not find track " + current_track_sound_name + " while loading savefile!");
-		return false;
+		// Do a quick and dirty find by value
+		auto tracks_it = fmod_tracks.begin();
+		while (tracks_it != fmod_tracks.end())
+		{
+			if (!stricmp(tracks_it->first.c_str(), current_track_sound_name.c_str()))
+			{
+				it = tracks_it;
+				break;
+			}
+
+			tracks_it++;
+		}
+		if (it == fmod_tracks.end())
+		{
+			current_track_sound = Fmod_CacheSound(current_track_sound_name.c_str(), false);
+
+			if (!current_track_sound)
+			{
+				_Fmod_Report("ERROR", "Could not find track " + current_track_sound_name + " while loading savefile!");
+				return false;
+			}
+		}
 	}
 
-	FMOD::Sound *current_track_sound = it->second;
+	if (!current_track_sound)
+		current_track_sound = it->second;
 
 	FMOD_RESULT result = fmod_system->playSound(current_track_sound, fmod_mp3_group, true, &fmod_current_track);
 	if (!_Fmod_Result_OK(&result))
@@ -370,7 +393,13 @@ bool CHudFmodPlayer::MsgFunc_FmodAmb(const char* pszName, int iSize, void* pbuf)
 									". Add the sound to your [MAPNAME].bsp_soundcache.txt file.");
 		_Fmod_Report("INFO", "Attempting to cache and play sound " + sound_path);
 		sound = Fmod_CacheSound(sound_path.c_str(), false);
-		if (!sound) return false; // Error will be reported by Fmod_CacheSound
+		if (!sound)
+		{
+			sound_path = "../valve/" + sound_path;
+			sound = Fmod_CacheSound(sound_path.c_str(), true);
+			if (!sound)
+				return false; // Error will be reported by Fmod_CacheSound
+		}
 	}
 	else
 		sound = sound_iter->second;
