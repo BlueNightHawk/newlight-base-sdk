@@ -1922,9 +1922,8 @@ void V_Init()
 	cl_waterdist = gEngfuncs.pfnRegisterVariable("cl_waterdist", "4", 0);
 	cl_chasedist = gEngfuncs.pfnRegisterVariable("cl_chasedist", "112", 0);
 
-
 	cl_viewlagscale = gEngfuncs.pfnRegisterVariable("cl_viewlagscale", "2", FCVAR_ARCHIVE);
-	cl_viewlagspeed = gEngfuncs.pfnRegisterVariable("cl_viewlagspeed", "2", FCVAR_ARCHIVE);
+	cl_viewlagspeed = gEngfuncs.pfnRegisterVariable("cl_viewlagspeed", "5", FCVAR_ARCHIVE);
 }
 
 
