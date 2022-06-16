@@ -28,6 +28,8 @@
 #include <string.h> // strcpy
 #include <stdlib.h> // atoi
 #include <ctype.h>	// isspace
+#include <algorithm>
+#include <cmath>
 
 #ifdef CLIENT_DLL
 #include "fmod_manager.h"
@@ -1994,7 +1996,7 @@ void PM_UnDuck()
 
 	VectorCopy(pmove->origin, newOrigin);
 
-	if (pmove->onground != -1)
+	if (pmove->onground != -1 && pmove->flags & FL_DUCKING && pmove->bInDuck == false)
 	{
 		for (i = 0; i < 3; i++)
 		{

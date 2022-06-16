@@ -647,6 +647,8 @@ void V_CalcNormalRefdef(struct ref_params_s* pparams)
 	static float oldz = 0;
 	static float lasttime;
 
+	static Vector viewheight = VEC_VIEW;
+
 	Vector camAngles, camForward, camRight, camUp;
 	cl_entity_t* pwater;
 
@@ -665,9 +667,21 @@ void V_CalcNormalRefdef(struct ref_params_s* pparams)
 	// view is the weapon model (only visible from inside body )
 	view = gEngfuncs.GetViewModel();
 
+	// interpolate
+	if (pparams->viewheight[2] == 28.0f && viewheight[2] < 28.0f)
+	{
+		viewheight[2] += pparams->frametime * 250.0f;
+		if (viewheight[2] > 28.0f)
+			viewheight[2] = 28.0f;
+	}
+	else
+	{
+		viewheight[2] = pparams->viewheight[2];
+	}
+
 	// refresh position
 	VectorCopy(pparams->simorg, pparams->vieworg);
-	VectorAdd(pparams->vieworg, pparams->viewheight, pparams->vieworg);
+	VectorAdd(pparams->vieworg, viewheight, pparams->vieworg);
 
 	VectorCopy(pparams->cl_viewangles, pparams->viewangles);
 
@@ -788,7 +802,7 @@ void V_CalcNormalRefdef(struct ref_params_s* pparams)
 	// Use predicted origin as view origin.
 	VectorCopy(pparams->simorg, view->origin);
 	view->origin[2] += (waterOffset);
-	VectorAdd(view->origin, pparams->viewheight, view->origin);
+	VectorAdd(view->origin, viewheight, view->origin);
 
 	// Let the viewmodel shake at about 10% of the amplitude
 	gEngfuncs.V_ApplyShake(view->origin, view->angles, 0.9);
@@ -848,7 +862,6 @@ void V_CalcNormalRefdef(struct ref_params_s* pparams)
 	V_Jump(pparams, view);
 	V_CalcViewAngle(pparams, view);
 
-	
 	VectorAdd(pparams->viewangles, InvPitch(cl_jumpangle) / 3.0f, pparams->viewangles);
 	VectorAdd(view->angles, cl_jumpangle, view->angles);
 	VectorCopy(view->angles, view->curstate.angles);
