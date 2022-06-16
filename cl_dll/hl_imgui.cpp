@@ -1,9 +1,12 @@
 ﻿#include "hud.h"
 #include "PlatformHeaders.h"
+#include <string>
+#include <algorithm>
 #include <Psapi.h>
 #include "fs_aux.h"
 
 #include "hl_imgui.h"
+#include "subtitles.h"
 
 #define ICON_MIN_FA 0xf000
 #define ICON_MAX_FA 0xf2e0
@@ -112,6 +115,7 @@ void HL_ImGUI_Init() {
 	io.Fonts->AddFontFromFileTTF( FS_ResolveModPath( "resource\\DroidSans.ttf" ).c_str(), 16, &config, icon_ranges_cyrillic );
 
 	ChapterSelectGUI_Init();
+	Subtitles_Init();
 }
 
 void HL_ImGUI_Deinit() {
@@ -133,6 +137,7 @@ void HL_ImGUI_Draw() {
 		SDL_ShowCursor( 1 );
 	} else {
 		SDL_ShowCursor( 0 );
+		Subtitles_Draw();
 	}
 	
 	glViewport( 0, 0, ( int ) ImGui::GetIO().DisplaySize.x, ( int ) ImGui::GetIO().DisplaySize.y );

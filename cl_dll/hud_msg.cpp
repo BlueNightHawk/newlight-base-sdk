@@ -20,6 +20,7 @@
 #include "cl_util.h"
 #include "parsemsg.h"
 #include "r_efx.h"
+#include "com_weapons.h"
 
 #include "particleman.h"
 extern IParticleMan* g_pParticleMan;
@@ -147,5 +148,15 @@ bool CHud::MsgFunc_Weapons(const char* pszName, int iSize, void* pbuf)
 
 	m_iWeaponBits = lowerBits | (upperBits << 32ULL);
 
+	return true;
+}
+
+bool CHud::MsgFunc_WeaponAnim(const char* pszName, int iSize, void* pbuf)
+{
+	BEGIN_READ(pbuf, iSize);
+	int iAnim = READ_BYTE();
+	int iBody = READ_SHORT();
+
+	CL_SendWeaponAnim(iAnim, iBody);
 	return true;
 }

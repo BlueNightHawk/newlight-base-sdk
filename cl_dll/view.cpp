@@ -1,5 +1,6 @@
 // view/refresh setup functions
 #include <cmath>
+#include <algorithm>
 
 #include "hud.h"
 #include "cl_util.h"
@@ -42,6 +43,7 @@ extern float vJumpAngles[3];
 
 void V_DropPunchAngle(float frametime, float* ev_punchangle);
 void VectorAngles(const float* forward, float* angles);
+void V_PunchAngle(float* ev_punchangle, float frametime, float *punch);
 
 #include "r_studioint.h"
 #include "com_model.h"
@@ -78,6 +80,10 @@ bool v_resetCamera = true;
 
 Vector v_client_aimangles;
 Vector ev_punchangle;
+Vector cl_jumpangle;
+Vector cl_jumppunch;
+
+bool g_bJumpState = false;
 
 cvar_t* scr_ofsx;
 cvar_t* scr_ofsy;
@@ -223,16 +229,13 @@ V_CalcRoll
 Used by view and sv_user
 ===============
 */
-float V_CalcRoll(Vector angles, Vector velocity, float rollangle, float rollspeed)
+float V_CalcAngle(Vector dir, Vector velocity, float rollangle, float rollspeed)
 {
 	float sign;
 	float side;
 	float value;
-	Vector forward, right, up;
 
-	AngleVectors(angles, forward, right, up);
-
-	side = DotProduct(velocity, right);
+	side = DotProduct(velocity, dir);
 	sign = side < 0 ? -1 : 1;
 	side = fabs(side);
 
@@ -408,31 +411,32 @@ void V_AddIdle(struct ref_params_s* pparams)
 
 /*
 ==============
-V_CalcViewRoll
+V_CalcViewAngle
 
 Roll is induced by movement and damage
 ==============
 */
-void V_CalcViewRoll(struct ref_params_s* pparams)
+void V_CalcViewAngle(struct ref_params_s* pparams, cl_entity_s *view)
 {
-	float side;
+	static float l_side = 0.0f, l_pitch = 0.0f;
 	cl_entity_t* viewentity;
+	Vector forward, right, up;
 
 	viewentity = gEngfuncs.GetEntityByIndex(pparams->viewentity);
 	if (!viewentity)
 		return;
 
-	side = V_CalcRoll(viewentity->angles, pparams->simvel, cl_rollangle->value, cl_rollspeed->value);
+	AngleVectors(viewentity->angles, forward, right, up);
 
-	pparams->viewangles[ROLL] += side;
+	l_side = std::lerp(l_side, V_CalcAngle(right, pparams->simvel, cl_rollangle->value, cl_rollspeed->value), pparams->frametime * 20.0f);
+	l_pitch = std::lerp(l_pitch, V_CalcAngle(forward, pparams->simvel, cl_rollangle->value, cl_rollspeed->value), pparams->frametime * 6.0f);
 
-	if (pparams->health <= 0 && (pparams->viewheight[2] != 0))
-	{
-		// only roll the view if the player is dead and the viewheight[2] is nonzero
-		// this is so deadcam in multiplayer will work.
-		pparams->viewangles[ROLL] = 80; // dead view angle
-		return;
-	}
+	view->angles[ROLL] += l_side * 1.75f;
+
+	AngleVectors(InvPitch(view->angles), forward, right, up);	
+
+	view->angles[PITCH] -= fabs(l_pitch) * 1.5f;
+	view->origin = view->origin - forward * (fabs(l_pitch) * 0.95f) + up * (fabs(l_pitch)*0.15f);
 }
 
 
@@ -485,6 +489,7 @@ void V_CalcViewModelLag(ref_params_t* pparams, cl_entity_s *view)
 	float flScale = cl_viewlagscale->value;
 
 	static Vector m_vecLastFacing;
+	static Vector m_vecLDifference;
 	Vector vOriginalOrigin = view->origin;
 	Vector vOriginalAngles = view->angles;
 
@@ -512,7 +517,10 @@ void V_CalcViewModelLag(ref_params_t* pparams, cl_entity_s *view)
 		m_vecLastFacing = m_vecLastFacing + vDifference * (flSpeed * pparams->frametime);
 		// Make sure it doesn't grow out of control!!!
 		m_vecLastFacing = m_vecLastFacing.Normalize();
-		view->origin = view->origin + (vDifference * -1.0f) * flScale;
+		for (int i = 0; i < 3; i++)
+			m_vecLDifference[i] = std::lerp(m_vecLDifference[i], vDifference[i], pparams->frametime * 35.0f);
+
+		view->origin = view->origin + (m_vecLDifference * -1.0f) * flScale;
 	}
 
 	AngleVectors(InvPitch(vOriginalAngles), forward, right, up);
@@ -542,6 +550,70 @@ void V_CalcViewModelLag(ref_params_t* pparams, cl_entity_s *view)
 	}
 }
 
+void V_RetractWeapon(ref_params_t* pparams, cl_entity_s* view)
+{
+	static float l_Fraction = 0.0f;
+	pmtrace_t tr;
+	Vector forward;
+	AngleVectors(InvPitch(view->angles), forward, nullptr, nullptr);
+
+	Vector vecSrc = pparams->vieworg;
+	Vector vecEnd = vecSrc + forward * 32;
+
+	gEngfuncs.pEventAPI->EV_PushPMStates();
+	gEngfuncs.pEventAPI->EV_SetSolidPlayers(pparams->viewentity - 1);
+
+	gEngfuncs.pEventAPI->EV_SetTraceHull(2);
+	gEngfuncs.pEventAPI->EV_PlayerTrace(vecSrc, vecEnd, PM_NORMAL, pparams->viewentity, &tr);
+
+	// noclipping
+	if (tr.fraction <= 0.01f)
+		tr.fraction = 1;
+	
+	l_Fraction = std::lerp(l_Fraction, (1 - tr.fraction), pparams->frametime * 10.0f);
+
+	view->origin = view->origin - (Vector(pparams->forward) * (l_Fraction * 10.0f));
+	view->angles[0] += (l_Fraction * 10.0f);
+
+	gEngfuncs.pEventAPI->EV_PopPMStates();
+}
+
+void V_Jump(ref_params_s* pparams, cl_entity_t* view)
+{
+	static float flFallVel = 0.0f;
+	static float l_FallVel = 0.0f;
+
+	if (pparams->onground <= 0)
+	{
+		flFallVel = V_max(-pparams->simvel[2], 0);
+
+		l_FallVel = std::lerp(l_FallVel, flFallVel, pparams->frametime * 5.0f);
+	}
+
+	if (pparams->onground != 0)
+		l_FallVel = std::lerp(l_FallVel, 0, pparams->frametime * 25.0f);
+
+	if (g_bJumpState && pparams->onground != 0)
+	{
+		cl_jumppunch = Vector(flFallVel * -0.01f, flFallVel * 0.01f, 0) * 20.0f;
+
+		flFallVel = 0;
+		g_bJumpState = false;
+	}
+	else if (!g_bJumpState && pparams->onground <= 0)
+	{
+		g_bJumpState = true;
+	}
+
+	float angle = V_min(l_FallVel * 0.05f, 20);
+	view->angles[0] += angle;
+	for (int i = 0; i < 3; i++)
+	{
+		pparams->viewangles[i] += gEngfuncs.pfnRandomFloat(-0.0055, 0.0055) * flFallVel * 0.05f;
+		view->angles[i] += gEngfuncs.pfnRandomFloat(-0.0055, 0.0055) * flFallVel * 0.05f;
+	}
+}
+
 #define ORIGIN_BACKUP 64
 #define ORIGIN_MASK (ORIGIN_BACKUP - 1)
 
@@ -567,6 +639,7 @@ void V_CalcNormalRefdef(struct ref_params_s* pparams)
 {
 	cl_entity_t *ent, *view;
 	int i;
+	static Vector punchangles[2];
 	Vector angles;
 	float waterOffset;
 	static viewinterp_t ViewInterp;
@@ -670,8 +743,6 @@ void V_CalcNormalRefdef(struct ref_params_s* pparams)
 
 	pparams->vieworg[2] += waterOffset;
 
-	V_CalcViewRoll(pparams);
-
 	V_AddIdle(pparams);
 
 	// offsets
@@ -726,14 +797,13 @@ void V_CalcNormalRefdef(struct ref_params_s* pparams)
 	V_CalcBob(pparams, 1, 1.50f);	// up
 
 	V_CalcViewModelLag(pparams, view);
+	V_RetractWeapon(pparams, view);
 
 	for (i = 0; i < 3; i++)
 	{
 		view->origin[i] += viewbob.bob[0] * 0.33 * pparams->right[i];
 		view->origin[i] += viewbob.bob[1] * 0.17 * pparams->up[i];
 	}
-
-	VectorCopy(view->angles, view->curstate.angles);
 
 	// pushing the view origin down off of the same X/Z plane as the ent's origin will give the
 	// gun a very nice 'shifting' effect when the player looks up/down. If there is a problem
@@ -759,13 +829,29 @@ void V_CalcNormalRefdef(struct ref_params_s* pparams)
 		view->origin[2] += 0.5;
 	}
 
-	// Add in the punchangle, if any
-	VectorAdd(pparams->viewangles, pparams->punchangle, pparams->viewangles);
-
-	// Include client side punch, too
-	VectorAdd(pparams->viewangles, (float*)&ev_punchangle, pparams->viewangles);
+	for (int j = 0; j < 2; j++)
+	{
+		for (int i = 0; i < 3; i++)
+		{
+			if (j == 0)
+				punchangles[j][i] = std::lerp(punchangles[j][i], ev_punchangle[i], pparams->frametime * 25.0f); 
+			else if (j == 1)
+				punchangles[j][i] = std::lerp(punchangles[j][i], pparams->punchangle[i], pparams->frametime * 25.0f); 
+		}
+		// Add in the punchangle
+		VectorAdd(pparams->viewangles, punchangles[j], pparams->viewangles);
+	}
 
 	V_DropPunchAngle(pparams->frametime, (float*)&ev_punchangle);
+	V_PunchAngle(cl_jumpangle, pparams->frametime, cl_jumppunch);
+
+	V_Jump(pparams, view);
+	V_CalcViewAngle(pparams, view);
+
+	
+	VectorAdd(pparams->viewangles, InvPitch(cl_jumpangle) / 3.0f, pparams->viewangles);
+	VectorAdd(view->angles, cl_jumpangle, view->angles);
+	VectorCopy(view->angles, view->curstate.angles);
 
 	// smooth out stair step ups
 #if 1
@@ -1710,6 +1796,11 @@ void DLLEXPORT V_CalcRefdef(struct ref_params_s* pparams)
 
 	memcpy(&gHUD.r_params, pparams, sizeof(ref_params_s));
 	
+	if (pparams->paused == 0)
+	{
+		gHUD.m_flAbsTime += pparams->frametime;
+	}
+
 	Fmod_Think(pparams);
 	/*
 // Example of how to overlay the whole screen with red at 50 % alpha
@@ -1745,6 +1836,56 @@ void V_DropPunchAngle(float frametime, float* ev_punchangle)
 	len -= (10.0 + len * 0.5) * frametime;
 	len = V_max(len, 0.0);
 	VectorScale(ev_punchangle, len, ev_punchangle);
+}
+
+
+/*
+
+=============
+
+PLut Client Punch From HL2
+
+=============
+
+*/
+
+#define PUNCH_DAMPING 6.0f // bigger number makes the response more damped, smaller is less damped
+
+// currently the system will overshoot, with larger damping values it won't
+#define PUNCH_SPRING_CONSTANT 65.0f // bigger number increases the speed at which the view corrects
+
+
+void V_PunchAngle(float* ev_punchangle, float frametime, float *punch)
+{
+	float damping;
+	float springForceMagnitude;
+
+	if (Length(ev_punchangle) > 0.001 || Length(punch) > 0.001)
+	{
+		VectorMA(ev_punchangle, frametime, punch, ev_punchangle);
+		damping = 1 - (PUNCH_DAMPING * frametime);
+
+		if (damping < 0)
+		{
+			damping = 0;
+		}
+
+		VectorScale(punch, damping, punch);
+
+		// torsional spring
+
+		// UNDONE: Per-axis spring constant?
+
+		springForceMagnitude = PUNCH_SPRING_CONSTANT * frametime;
+
+		springForceMagnitude = std::clamp(springForceMagnitude, 0.0f, 2.0f);
+		VectorMA(punch, -springForceMagnitude, ev_punchangle, punch);
+
+		// don't wrap around
+		ev_punchangle[0] = std::clamp(ev_punchangle[0], -7.0f, 7.0f);
+		ev_punchangle[1] = std::clamp(ev_punchangle[1], -179.0f, 179.0f);
+		ev_punchangle[2] = std::clamp(ev_punchangle[2], -7.0f, 7.0f);
+	}
 }
 
 /*

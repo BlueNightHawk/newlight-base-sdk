@@ -16,6 +16,7 @@ void EV_GetDefaultShellInfo(struct event_args_s* args, float* origin, float* vel
 bool EV_IsLocal(int idx);
 bool EV_IsPlayer(int idx);
 void EV_CreateTracer(float* start, float* end);
+void EV_WeaponAnim(int anim, int body);
 
 struct cl_entity_s* GetEntity(int idx);
 struct cl_entity_s* GetViewEntity();

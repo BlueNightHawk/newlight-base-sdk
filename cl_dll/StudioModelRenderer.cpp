@@ -1,5 +1,8 @@
 // studio_model.cpp
 // routines for setting up to draw 3DStudio models
+#include <cmath>
+#include <algorithm>
+#include "PlatformHeaders.h"
 
 #include "hud.h"
 #include "cl_util.h"
@@ -10,6 +13,8 @@
 #include "cl_entity.h"
 #include "dlight.h"
 #include "triangleapi.h"
+
+#include "Exports.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -721,13 +726,27 @@ float CStudioModelRenderer::StudioEstimateFrame(mstudioseqdesc_t* pseqdesc)
 
 	if (m_fDoInterp)
 	{
-		if (m_clTime < m_pCurrentEntity->curstate.animtime)
+		if (m_pCurrentEntity == gEngfuncs.GetViewModel())
 		{
-			dfdt = 0;
+			if (gHUD.m_flAbsTime < gHUD.m_flWeaponAnimTime)
+			{
+				dfdt = 0;
+			}
+			else
+			{
+				dfdt = (gHUD.m_flAbsTime - gHUD.m_flWeaponAnimTime) * m_pCurrentEntity->curstate.framerate * pseqdesc->fps;
+			}
 		}
 		else
 		{
-			dfdt = (m_clTime - m_pCurrentEntity->curstate.animtime) * m_pCurrentEntity->curstate.framerate * pseqdesc->fps;
+			if (m_clTime < m_pCurrentEntity->curstate.animtime)
+			{
+				dfdt = 0;
+			}
+			else
+			{
+				dfdt = (m_clTime - m_pCurrentEntity->curstate.animtime) * m_pCurrentEntity->curstate.framerate * pseqdesc->fps;
+			}
 		}
 	}
 	else
@@ -1103,6 +1122,73 @@ void CStudioModelRenderer::StudioMergeBones(model_t* m_pSubModel)
 	}
 }
 
+/*
+===============
+StudioViewmodelEvent
+
+===============
+*/
+void CStudioModelRenderer::StudioViewmodelEvent()
+{
+	mstudioseqdesc_t* pseqdesc;
+	mstudioevent_t* pevent;
+	float frametime = (m_clTime - m_clOldTime);
+	int i, sequence;
+	float end, start;
+
+	if (gHUD.r_params.paused != 0)
+		return; // gamepaused
+
+	// fill attachments with interpolated origin
+	if (m_pStudioHeader->numattachments <= 0)
+	{
+		VectorCopy(m_pCurrentEntity->origin, m_pCurrentEntity->attachment[0]);
+		VectorCopy(m_pCurrentEntity->origin, m_pCurrentEntity->attachment[1]);
+		VectorCopy(m_pCurrentEntity->origin, m_pCurrentEntity->attachment[2]);
+		VectorCopy(m_pCurrentEntity->origin, m_pCurrentEntity->attachment[3]);
+	}
+
+	if ((m_pCurrentEntity->curstate.effects & EF_MUZZLEFLASH) != 0)
+	{
+		dlight_t* dl = gEngfuncs.pEfxAPI->CL_AllocDlight(0);
+
+		m_pCurrentEntity->curstate.effects &= ~EF_MUZZLEFLASH;
+		VectorCopy(m_pCurrentEntity->attachment[0], dl->origin);
+		dl->die = gEngfuncs.GetClientTime() + 0.15f;
+		dl->color.r = 255;
+		dl->color.g = 192;
+		dl->color.b = 64;
+		dl->decay = 312;
+		dl->radius = 64;
+	}
+
+	sequence = std::clamp(0, m_pCurrentEntity->curstate.sequence, m_pStudioHeader->numseq - 1);
+	pseqdesc = (mstudioseqdesc_t*)((byte*)m_pStudioHeader + m_pStudioHeader->seqindex) + sequence;
+
+	// no events for this animation
+	if (pseqdesc->numevents == 0)
+		return;
+
+	end = StudioEstimateFrame(pseqdesc);
+	start = end - m_pCurrentEntity->curstate.framerate * frametime * pseqdesc->fps;
+	pevent = (mstudioevent_t*)((byte*)m_pStudioHeader + pseqdesc->eventindex);
+
+	if (m_pCurrentEntity->latched.sequencetime == gHUD.m_flWeaponAnimTime)
+	{
+		if ((pseqdesc->flags & STUDIO_LOOPING) != 0)
+			start = -0.01f;
+	}
+
+	for (i = 0; i < pseqdesc->numevents; i++)
+	{
+		// ignore all non-client-side events
+		if (pevent[i].event < 5000)
+			continue;
+
+		if ((float)V_max(pevent[i].frame, frametime) > start && pevent[i].frame <= end)
+			HUD_StudioEvent(&pevent[i], m_pCurrentEntity);
+	}
+}
 
 /*
 ====================
@@ -1119,6 +1205,22 @@ bool CStudioModelRenderer::StudioDrawModel(int flags)
 	IEngineStudio.GetTimes(&m_nFrameCount, &m_clTime, &m_clOldTime);
 	IEngineStudio.GetViewInfo(m_vRenderOrigin, m_vUp, m_vRight, m_vNormal);
 	IEngineStudio.GetAliasScale(&m_fSoftwareXScale, &m_fSoftwareYScale);
+
+	if (m_pCurrentEntity == gEngfuncs.GetViewModel())
+	{
+		static model_s* modcache = nullptr;
+		if (modcache != m_pCurrentEntity->model)
+		{
+			gHUD.m_flWeaponAnimTime = gHUD.m_flAbsTime = m_clTime;
+			gHUD.cachedviewmodel.curstate.sequence = -1;
+		}
+		else if (gHUD.m_bLevelChange && gHUD.cachedviewmodel.curstate.sequence != -1)
+		{
+			gEngfuncs.pfnWeaponAnim(gHUD.cachedviewmodel.curstate.sequence, m_pCurrentEntity->curstate.body);
+		}
+		gHUD.m_bLevelChange = false;
+		modcache = m_pCurrentEntity->model;
+	}
 
 	if (m_pCurrentEntity->curstate.renderfx == kRenderFxDeadPlayer)
 	{
@@ -1185,7 +1287,11 @@ bool CStudioModelRenderer::StudioDrawModel(int flags)
 	if ((flags & STUDIO_EVENTS) != 0)
 	{
 		StudioCalcAttachments();
-		IEngineStudio.StudioClientEvents();
+		if (m_pCurrentEntity == gEngfuncs.GetViewModel())
+			StudioViewmodelEvent();
+		else
+			IEngineStudio.StudioClientEvents();
+		
 		// copy attachments into global entity array
 		if (m_pCurrentEntity->index > 0)
 		{
@@ -1214,6 +1320,11 @@ bool CStudioModelRenderer::StudioDrawModel(int flags)
 		IEngineStudio.StudioSetRemapColors(m_nTopColor, m_nBottomColor);
 
 		StudioRenderModel();
+	}
+
+	if (m_pCurrentEntity == gEngfuncs.GetViewModel())
+	{
+		memcpy(&gHUD.cachedviewmodel, m_pCurrentEntity, sizeof(cl_entity_s));
 	}
 
 	return true;

@@ -12,6 +12,7 @@
 
 #include "Exports.h"
 
+void CL_SendWeaponAnim(int anim, int body);
 void COM_Log(const char* pszFile, const char* fmt, ...);
 bool CL_IsDead();
 

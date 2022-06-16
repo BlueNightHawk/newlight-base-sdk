@@ -135,6 +135,12 @@ int __MsgFunc_GameMode(const char* pszName, int iSize, void* pbuf)
 	return static_cast<int>(gHUD.MsgFunc_GameMode(pszName, iSize, pbuf));
 }
 
+int __MsgFunc_WeaponAnim(const char* pszName, int iSize, void* pbuf)
+{
+	return static_cast<int>(gHUD.MsgFunc_WeaponAnim(pszName, iSize, pbuf));
+}
+
+
 // TFFree Command Menu
 void __CmdFunc_OpenCommandMenu()
 {
@@ -322,6 +328,8 @@ void CHud::Init()
 	// VGUI Menus
 	HOOK_MESSAGE(VGUIMenu);
 
+	HOOK_MESSAGE(WeaponAnim);
+
 	CVAR_CREATE("hud_classautokill", "1", FCVAR_ARCHIVE | FCVAR_USERINFO); // controls whether or not to suicide immediately on TF class switch
 	CVAR_CREATE("hud_takesshots", "0", FCVAR_ARCHIVE);					   // controls whether or not to automatically take screenshots at the end of a round
 
@@ -377,6 +385,7 @@ void CHud::Init()
 	m_Menu.Init();
 
 	MsgFunc_ResetHUD(0, 0, NULL);
+	m_bLevelChange = false;
 }
 
 // CHud destructor
@@ -519,6 +528,8 @@ void CHud::VidInit()
 	m_StatusIcons.VidInit();
 	m_Fmod.VidInit();
 	GetClientVoiceMgr()->VidInit();
+
+	m_bLevelChange = true;
 }
 
 bool CHud::MsgFunc_Logo(const char* pszName, int iSize, void* pbuf)

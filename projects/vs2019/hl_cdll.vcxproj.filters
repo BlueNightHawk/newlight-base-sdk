@@ -357,6 +357,9 @@
     <ClCompile Include="..\..\cl_dll\fmod_player.cpp">
       <Filter>Source Files\cl_dll\fmod</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\cl_dll\subtitles.cpp">
+      <Filter>Source Files\cl_dll\newui</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\cl_dll\kbutton.h">

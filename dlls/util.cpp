@@ -637,10 +637,34 @@ void UTIL_EmitAmbientSound(edict_t* entity, const Vector& vecOrigin, const char*
 	{
 		char name[32];
 		if (SENTENCEG_Lookup(samp, name) >= 0)
+		{
+			if (gmsgOnSound)
+			{
+				MESSAGE_BEGIN(MSG_ALL, gmsgOnSound);
+				WRITE_STRING(samp);
+				WRITE_BYTE(1);
+				WRITE_COORD(0);
+				WRITE_COORD(0);
+				WRITE_COORD(0);
+				MESSAGE_END();
+			}
 			EMIT_AMBIENT_SOUND(entity, rgfl, name, vol, attenuation, fFlags, pitch);
+		}
 	}
 	else
+	{
+		if (gmsgOnSound)
+		{
+			MESSAGE_BEGIN(MSG_ALL, gmsgOnSound);
+			WRITE_STRING(samp);
+			WRITE_BYTE(1);
+			WRITE_COORD(0);
+			WRITE_COORD(0);
+			WRITE_COORD(0);
+			MESSAGE_END();
+		}
 		EMIT_AMBIENT_SOUND(entity, rgfl, samp, vol, attenuation, fFlags, pitch);
+	}
 }
 
 static unsigned short FixedUnsigned16(float value, float scale)

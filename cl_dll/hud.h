@@ -615,7 +615,7 @@ public:
 	bool MsgFunc_SetFOV(const char* pszName, int iSize, void* pbuf);
 	bool MsgFunc_Concuss(const char* pszName, int iSize, void* pbuf);
 	bool MsgFunc_Weapons(const char* pszName, int iSize, void* pbuf);
-
+	bool MsgFunc_WeaponAnim(const char* pszName, int iSize, void* pbuf);
 	// Screen information
 	SCREENINFO m_scrinfo;
 
@@ -634,6 +634,12 @@ public:
 public:
 	ref_params_s r_params;
 	bool m_binMainMenu;
+
+	float m_flAbsTime;
+	float m_flWeaponAnimTime;
+
+	cl_entity_t cachedviewmodel;
+	bool m_bLevelChange;
 };
 
 extern CHud gHUD;

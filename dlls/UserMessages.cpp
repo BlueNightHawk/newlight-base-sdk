@@ -75,5 +75,11 @@ void LinkUserMessages()
 	gmsgFmodSave = REG_USER_MSG("FmodSave", -1);
 	gmsgFmodLoad = REG_USER_MSG("FmodLoad", -1);
 
-	gmsgFmodRev = REG_USER_MSG("FmodRev", 11);
+	gmsgFmodRev = REG_USER_MSG("FmodRev", 3);
+
+	gmsgOnSound = REG_USER_MSG("OnSound", -1);
+	gmsgSubtClear = REG_USER_MSG("SubtClear", 0);
+	gmsgSubtRemove = REG_USER_MSG("SubtRemove", -1);
+
+	gmsgWeaponAnim = REG_USER_MSG("WeaponAnim", sizeof(byte) + sizeof(short));
 }

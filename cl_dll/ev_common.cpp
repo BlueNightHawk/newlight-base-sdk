@@ -199,3 +199,16 @@ void EV_MuzzleFlash()
 	// Or in the muzzle flash
 	ent->curstate.effects |= EF_MUZZLEFLASH;
 }
+
+/*
+=================
+EV_WeaponAnim
+
+Play weapon/view model animation
+=================
+*/
+void EV_WeaponAnim(int anim, int body)
+{
+	gEngfuncs.pEventAPI->EV_WeaponAnimation(anim, body);
+	gHUD.m_flWeaponAnimTime = gHUD.m_flAbsTime;
+}

@@ -63,5 +63,10 @@ inline int gmsgFmodSeek = 0;
 inline int gmsgFmodSave = 0;
 inline int gmsgFmodLoad = 0;
 inline int gmsgFmodRev = 0;
+inline int gmsgWeaponAnim = 0;
+
+inline int gmsgOnSound = 0;
+inline int gmsgSubtClear = 0;
+inline int gmsgSubtRemove = 0;
 
 void LinkUserMessages();

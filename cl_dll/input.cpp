@@ -462,8 +462,15 @@ void IN_UseDown()
 	gHUD.m_Spectator.HandleButtonsDown(IN_USE);
 }
 void IN_UseUp() { KeyUp(&in_use); }
+extern Vector cl_jumppunch;
+extern bool g_bJumpState;
 void IN_JumpDown()
 {
+	if (!g_bJumpState)
+	{
+		cl_jumppunch = Vector(-2.5, 2.5, 0) * 20;
+		g_bJumpState = true;
+	}
 	KeyDown(&in_jump);
 	gHUD.m_Spectator.HandleButtonsDown(IN_JUMP);
 }

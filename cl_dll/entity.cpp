@@ -15,6 +15,9 @@
 #include "Exports.h"
 
 #include "particleman.h"
+
+#include "PlatformHeaders.h"
+#include <gl/GL.h>
 extern IParticleMan* g_pParticleMan;
 
 void Game_AddObjects();
@@ -306,6 +309,10 @@ void DLLEXPORT HUD_CreateEntities()
 	Beams();
 #endif
 
+	// Remove noclip ghosting
+	glClear(GL_COLOR_BUFFER_BIT);
+	glClearColor(0, 0, 0, 0);
+
 	// Add in any game specific objects
 	Game_AddObjects();
 
@@ -327,6 +334,26 @@ void DLLEXPORT HUD_StudioEvent(const struct mstudioevent_s* event, const struct 
 
 	bool iMuzzleFlash = true;
 
+	bool bMuzlleflashLight = (event->event > 5000 && event->event < 6000 && (event->event != 5002 && event->event != 5004)) ? true : false;
+
+	if (bMuzlleflashLight)
+	{
+		cl_entity_s* ent = (cl_entity_s *)entity;
+		int idx = 0;
+		if (ent->index >= 1)
+		{
+			idx = ent->index + 1;
+		}
+		dlight_t* dl = gEngfuncs.pEfxAPI->CL_AllocDlight(idx);
+
+		VectorCopy(ent->attachment[0], dl->origin);
+		dl->die = gEngfuncs.GetClientTime() + 0.45f;
+		dl->color.r = 255;
+		dl->color.g = 192;
+		dl->color.b = 64;
+		dl->decay = 512;
+		dl->radius = 150;
+	}
 
 	switch (event->event)
 	{

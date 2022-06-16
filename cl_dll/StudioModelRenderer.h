@@ -32,6 +32,8 @@ public:
 	// Local interfaces
 	//
 
+	virtual void StudioViewmodelEvent();
+
 	// Look up animation data for sequence
 	virtual mstudioanim_t* StudioGetAnim(model_t* m_pSubModel, mstudioseqdesc_t* pseqdesc);
 

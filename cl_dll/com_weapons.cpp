@@ -88,8 +88,12 @@ void HUD_SendWeaponAnim(int iAnim, int body, bool force)
 
 	g_currentanim = iAnim;
 
+	if (gHUD.m_bLevelChange)
+		return;
+
 	// Tell animation system new info
 	gEngfuncs.pfnWeaponAnim(iAnim, body);
+	gHUD.m_flWeaponAnimTime = gHUD.m_flAbsTime;
 }
 
 /*
@@ -259,6 +263,19 @@ float UTIL_SharedRandomFloat(unsigned int seed, float low, float high)
 
 		return (low + offset * range);
 	}
+}
+
+/*
+=================
+CL_SendWeaponAnim
+
+Play weapon/view model animation
+=================
+*/
+void CL_SendWeaponAnim(int anim, int body)
+{
+	gEngfuncs.pfnWeaponAnim(anim, body);
+	gHUD.m_flWeaponAnimTime = gHUD.m_flAbsTime;
 }
 
 /*
