@@ -729,9 +729,10 @@ bool CBasePlayerWeapon::UpdateClientData(CBasePlayer* pPlayer)
 }
 
 
-void CBasePlayerWeapon::SendWeaponAnim(int iAnim, int body)
+void CBasePlayerWeapon::SendWeaponAnim(int iAnim, int body, bool skiplocal)
 {
-	const bool skiplocal = UseDecrement() != false;
+	if (skiplocal == true)
+		skiplocal = UseDecrement() != false;
 
 	m_pPlayer->pev->weaponanim = iAnim;
 
@@ -851,7 +852,7 @@ bool CBasePlayerWeapon::DefaultDeploy(const char* szViewModel, const char* szWea
 	m_pPlayer->pev->viewmodel = MAKE_STRING(szViewModel);
 	m_pPlayer->pev->weaponmodel = MAKE_STRING(szWeaponModel);
 	strcpy(m_pPlayer->m_szAnimExtention, szAnimExt);
-	SendWeaponAnim(iAnim, body);
+	SendWeaponAnim(iAnim, body, false);
 
 	m_pPlayer->m_flNextAttack = UTIL_WeaponTimeBase() + 0.5;
 	m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + 1.0;

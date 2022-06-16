@@ -211,7 +211,7 @@ CBasePlayerWeapon::SendWeaponAnim
 Animate weapon model
 =====================
 */
-void CBasePlayerWeapon::SendWeaponAnim(int iAnim, int body)
+void CBasePlayerWeapon::SendWeaponAnim(int iAnim, int body, bool skiplocal)
 {
 	m_pPlayer->pev->weaponanim = iAnim;
 
