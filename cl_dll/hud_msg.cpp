@@ -160,3 +160,14 @@ bool CHud::MsgFunc_WeaponAnim(const char* pszName, int iSize, void* pbuf)
 	CL_SendWeaponAnim(iAnim, iBody);
 	return true;
 }
+
+bool CHud::MsgFunc_PlayerSpawn(const char* pszName, int iSize, void* pbuf)
+{
+	BEGIN_READ(pbuf, iSize);
+
+	gHUD.m_flAbsTime = 0;
+	gHUD.m_flWeaponAnimTime = 0;
+	gHUD.cachedviewmodel.curstate.sequence = -1;
+
+	return true;
+}

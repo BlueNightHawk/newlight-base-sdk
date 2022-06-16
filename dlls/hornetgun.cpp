@@ -47,6 +47,8 @@ void CHgun::Spawn()
 	m_iDefaultAmmo = HIVEHAND_DEFAULT_GIVE;
 	m_iFirePhase = 0;
 
+	pev->classname = MAKE_STRING("weapon_hornetgun");
+
 	FallInit(); // get ready to fall down.
 }
 

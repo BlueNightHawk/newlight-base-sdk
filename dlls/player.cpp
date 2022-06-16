@@ -3918,6 +3918,9 @@ void CBasePlayer::UpdateClientData()
 
 	if (m_bSpawnCheck)
 	{
+		MESSAGE_BEGIN(MSG_ONE, gmsgPlayerSpawn, NULL, pev);
+		MESSAGE_END();
+		gEvilImpulse101 = true;
 		for (int i = 0; i < 32; i++)
 		{
 			if (strlen(g_chapterinfo[i].mapname) <= 0)
@@ -3938,6 +3941,7 @@ void CBasePlayer::UpdateClientData()
 				GiveNamedItem(g_chapterinfo[i].weapons[j]);
 			}
 		}
+		gEvilImpulse101 = false;
 	}
 
 	if (m_iHideHUD != m_iClientHideHUD)

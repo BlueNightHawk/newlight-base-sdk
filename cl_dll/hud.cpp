@@ -140,6 +140,12 @@ int __MsgFunc_WeaponAnim(const char* pszName, int iSize, void* pbuf)
 	return static_cast<int>(gHUD.MsgFunc_WeaponAnim(pszName, iSize, pbuf));
 }
 
+int __MsgFunc_PlSpawn(const char* pszName, int iSize, void* pbuf)
+{
+	return static_cast<int>(gHUD.MsgFunc_PlayerSpawn(pszName, iSize, pbuf));
+}
+
+
 
 // TFFree Command Menu
 void __CmdFunc_OpenCommandMenu()
@@ -329,6 +335,7 @@ void CHud::Init()
 	HOOK_MESSAGE(VGUIMenu);
 
 	HOOK_MESSAGE(WeaponAnim);
+	HOOK_MESSAGE(PlSpawn);
 
 	CVAR_CREATE("hud_classautokill", "1", FCVAR_ARCHIVE | FCVAR_USERINFO); // controls whether or not to suicide immediately on TF class switch
 	CVAR_CREATE("hud_takesshots", "0", FCVAR_ARCHIVE);					   // controls whether or not to automatically take screenshots at the end of a round

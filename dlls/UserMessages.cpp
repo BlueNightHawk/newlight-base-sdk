@@ -82,4 +82,5 @@ void LinkUserMessages()
 	gmsgSubtRemove = REG_USER_MSG("SubtRemove", -1);
 
 	gmsgWeaponAnim = REG_USER_MSG("WeaponAnim", sizeof(byte) + sizeof(short));
+	gmsgPlayerSpawn = REG_USER_MSG("PlSpawn", 0);
 }
