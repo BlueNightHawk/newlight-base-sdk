@@ -169,5 +169,10 @@ bool CHud::MsgFunc_PlayerSpawn(const char* pszName, int iSize, void* pbuf)
 	gHUD.m_flWeaponAnimTime = 0;
 	gHUD.cachedviewmodel.curstate.sequence = -1;
 
+	if (stricmp("maps/c1a2.bsp", gEngfuncs.pfnGetLevelName()) <= 0)
+	{
+		gEngfuncs.SetViewAngles(Vector(0, 90, 0));
+	}
+
 	return true;
 }

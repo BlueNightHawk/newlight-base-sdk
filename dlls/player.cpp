@@ -3918,6 +3918,23 @@ void CBasePlayer::UpdateClientData()
 
 	if (m_bSpawnCheck)
 	{
+		// HACK to open the elevator door in office complex
+		if (!stricmp(STRING(gpGlobals->mapname), "c1a2"))
+		{
+			edict_t* pentTarget = NULL;
+
+			while ((pentTarget = FIND_ENTITY_BY_TARGETNAME(pentTarget, "elestartmm")) != nullptr)
+			{
+				if (FNullEnt(pentTarget))
+					break;
+
+				CBaseEntity* pTarget = CBaseEntity::Instance(pentTarget);
+
+				if (pTarget)
+					pTarget->Use(m_hActivator, this, USE_TOGGLE, 0);
+			}
+		}
+
 		MESSAGE_BEGIN(MSG_ONE, gmsgPlayerSpawn, NULL, pev);
 		MESSAGE_END();
 		gEvilImpulse101 = true;
