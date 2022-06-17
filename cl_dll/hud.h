@@ -499,6 +499,15 @@ public:
 	void PlayAmbSound(const char* sample, bool looping, Vector pos, float volume, float min_atten, float max_atten, float pitch, Vector vel = Vector(0,0,0));
 };
 
+typedef struct
+{
+	HSPRITE spr;
+	Rect rc;
+	int r;
+	int g;
+	int b;
+} crosspr_s;
+
 //
 //-----------------------------------------------------
 //
@@ -641,6 +650,8 @@ public:
 
 	cl_entity_t cachedviewmodel;
 	bool m_bLevelChange;
+
+	crosspr_s crossspr;
 };
 
 extern CHud gHUD;

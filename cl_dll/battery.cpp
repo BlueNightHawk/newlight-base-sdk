@@ -110,10 +110,11 @@ bool CHudBattery::Draw(float flTime)
 
 	ScaleColors(r, g, b, a);
 
+	int SuitWidth = gHUD.GetSpriteRect(gHUD.GetSpriteIndex("suit_full")).right - gHUD.GetSpriteRect(gHUD.GetSpriteIndex("suit_full")).left;
 	int iOffset = (m_prc1->bottom - m_prc1->top) / 6;
 
 	y = ScreenHeight - gHUD.m_iFontHeight - gHUD.m_iFontHeight / 2;
-	x = ScreenWidth / 4;
+	x = SuitWidth * 4.5;
 
 	// make sure we have the right sprite handles
 	if (0 == m_hSprite1)

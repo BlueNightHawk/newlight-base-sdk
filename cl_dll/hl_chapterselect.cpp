@@ -320,9 +320,6 @@ void ChapterSelectGUI_Draw()
 	ImGui::NewLine();
 	ChapterSelectGUI_DrawButtons();
 
-
-
-
 	ImGui::End();
 
 	ImGui::PopStyleVar();

@@ -934,6 +934,7 @@ bool CHudAmmo::Draw(float flTime)
 			SPR_DrawAdditive(0, x, y - iOffset, &m_pWeapon->rcAmmo2);
 		}
 	}
+
 	return true;
 }
 

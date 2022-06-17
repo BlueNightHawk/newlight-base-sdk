@@ -86,7 +86,7 @@ void CHud::Think()
 		m_iFOV = gHUD.m_Spectator.GetFOV(); // default_fov->value;
 	}
 }
-
+void HUD_DrawOrthoTriangles();
 // Redraw
 // step through the local data,  placing the appropriate graphics & text as appropriate
 // returns 1 if they've changed, 0 otherwise
@@ -159,6 +159,8 @@ bool CHud::Redraw(float flTime, bool intermission)
 		}
 	}
 
+	HUD_DrawOrthoTriangles();
+
 	// are we in demo mode? do we need to draw the logo in the top corner?
 	if (0 != m_iLogo)
 	{
@@ -222,6 +224,7 @@ int CHud::DrawHudNumberString(int xpos, int ypos, int iMinX, int iNumber, int r,
 {
 	char szString[32];
 	sprintf(szString, "%d", iNumber);
+	TRI_SprAdjustSize(&xpos, &ypos, 0, 0);
 	return DrawHudStringReverse(xpos, ypos, iMinX, szString, r, g, b);
 }
 

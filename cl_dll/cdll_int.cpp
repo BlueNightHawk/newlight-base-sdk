@@ -59,6 +59,9 @@ void InitInput();
 void EV_HookEvents();
 void IN_Commands();
 
+void TriHud_Init();
+void TriHUD_VidInit();
+
 /*
 ================================
 HUD_GetHullBounds
@@ -135,6 +138,9 @@ int DLLEXPORT Initialize(cl_enginefunc_t* pEnginefuncs, int iVersion)
 		return 0;
 	}
 
+
+	TriHud_Init();
+
 	FS_InitModule();
 	HL_ImGUI_Init();
 
@@ -166,6 +172,8 @@ int DLLEXPORT HUD_VidInit()
 	gHUD.VidInit();
 
 	VGui_Startup();
+
+	TriHUD_VidInit();
 
 	return 1;
 }

@@ -583,6 +583,10 @@ void V_Jump(ref_params_s* pparams, cl_entity_t* view)
 	static float flFallVel = 0.0f;
 	static float l_FallVel = 0.0f;
 
+	if (pparams->waterlevel != 0)
+	{
+		g_bJumpState = false;
+	}
 	if (pparams->onground <= 0)
 	{
 		flFallVel = V_max(-pparams->simvel[2], 0);
@@ -593,7 +597,7 @@ void V_Jump(ref_params_s* pparams, cl_entity_t* view)
 	if (pparams->onground != 0)
 		l_FallVel = std::lerp(l_FallVel, 0, pparams->frametime * 25.0f);
 
-	if (g_bJumpState && pparams->onground != 0)
+	if (g_bJumpState && pparams->onground != 0 && pparams->waterlevel == 0)
 	{
 		cl_jumppunch = Vector(flFallVel * -0.01f, flFallVel * 0.01f, 0) * 20.0f;
 
