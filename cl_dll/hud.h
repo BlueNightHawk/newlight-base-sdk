@@ -506,6 +506,9 @@ typedef struct
 	int r;
 	int g;
 	int b;
+
+	float xofs;
+	float yofs;
 } crosspr_s;
 
 //

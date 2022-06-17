@@ -382,8 +382,8 @@ void V_CalcGunAngle(struct ref_params_s* pparams)
 	if (!viewent)
 		return;
 
-	viewent->angles[YAW] = pparams->viewangles[YAW] + pparams->crosshairangle[YAW];
-	viewent->angles[PITCH] = -pparams->viewangles[PITCH] + pparams->crosshairangle[PITCH] * 0.25;
+	viewent->angles[YAW] = pparams->viewangles[YAW] + gHUD.crossspr.xofs;
+	viewent->angles[PITCH] = -pparams->viewangles[PITCH] + gHUD.crossspr.yofs * 0.25;
 	viewent->angles[ROLL] -= v_idlescale * sin(pparams->time * v_iroll_cycle.value) * v_iroll_level.value;
 
 	// don't apply all of the v_ipitch to prevent normally unseen parts of viewmodel from coming into view.
@@ -1816,6 +1816,9 @@ void DLLEXPORT V_CalcRefdef(struct ref_params_s* pparams)
 	if (pparams->paused == 0)
 	{
 		gHUD.m_flAbsTime += pparams->frametime;
+	
+		gHUD.crossspr.xofs = std::lerp(gHUD.crossspr.xofs, pparams->crosshairangle[1], pparams->frametime * 10.0f);
+		gHUD.crossspr.yofs = std::lerp(gHUD.crossspr.yofs, pparams->crosshairangle[0], pparams->frametime * 10.0f);
 	}
 
 	Fmod_Think(pparams);

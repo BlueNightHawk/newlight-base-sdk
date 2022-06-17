@@ -148,6 +148,8 @@ void TRI_SprDrawGeneric(int frame, int x, int y, const Rect* prc, bool changepos
 		TRI_SprAdjustSize(&x, &y, &w, &h, changepos);
 		x = (ScreenWidth - w) / 2;
 		y = (ScreenHeight - h) / 2;
+		x -= gHUD.crossspr.xofs * 10.0f;
+		y -= gHUD.crossspr.yofs * 10.0f;
 	}
 	else
 		TRI_SprAdjustSize(&x, &y, &w, &h);
