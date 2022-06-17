@@ -112,6 +112,48 @@ cvar_t v_ipitch_level = {"v_ipitch_level", "0.3", 0, 0.3};
 
 float v_idlescale; // used by TFC for concussion grenade effect
 
+static int g_iNumCamBones = -1;
+
+struct
+{
+	char pszModel[64] = {"\0"};
+	int iBone = 0;
+	float scale = 0.0f;
+} g_camboneinf[64];
+
+void V_GetCamBoneInfo()
+{
+	char *pfile, *afile;
+	pfile = afile = (char *)gEngfuncs.COM_LoadFile("config/camboneinf.txt", 5, nullptr);
+	char token[128];
+	int idx = 0;
+
+	if (pfile == nullptr)
+		return;
+
+	while ((pfile = gEngfuncs.COM_ParseFile(pfile, token)) != nullptr)
+	{
+		if (strlen(token) == 0)
+			break;
+
+		if (!stricmp(token, "name"))
+		{
+			pfile = gEngfuncs.COM_ParseFile(pfile, token);
+			sprintf(g_camboneinf[idx].pszModel, "models/%s.mdl", token);
+			pfile = gEngfuncs.COM_ParseFile(pfile, token);
+			g_camboneinf[idx].iBone = atoi(token);
+			pfile = gEngfuncs.COM_ParseFile(pfile, token);
+			g_camboneinf[idx].scale = atof(token);
+			idx++;
+		}
+	}
+
+	if (idx > 0)
+		g_iNumCamBones = idx;
+
+	gEngfuncs.COM_FreeFile(afile);
+}
+
 //=============================================================================
 /*
 void V_NormalizeAngles( Vector& angles )
@@ -173,10 +215,10 @@ void V_InterpolateAngles( float *start, float *end, float *output, float frac )
 // Quakeworld bob code, this fixes jitters in the mutliplayer since the clock (pparams->time) isn't quite linear
 struct
 {
-	float bob[2];
+	float bob[3];
 
-	double bobtime[2];
-	double lasttime[2];
+	double bobtime[3];
+	double lasttime[3];
 } viewbob;
 
 void V_CalcBob(struct ref_params_s* pparams, int dir, float freqmod)
@@ -585,17 +627,21 @@ void V_Jump(ref_params_s* pparams, cl_entity_t* view)
 
 	if (pparams->waterlevel != 0)
 	{
+		flFallVel = 0.0f;
+		l_FallVel = std::lerp(l_FallVel, 0.0f, pparams->frametime * 25.0f);
 		g_bJumpState = false;
 	}
-	if (pparams->onground <= 0)
+	else if (pparams->onground <= 0)
 	{
-		flFallVel = V_max(-pparams->simvel[2], 0);
+		flFallVel = -pparams->simvel[2];
 
 		l_FallVel = std::lerp(l_FallVel, flFallVel, pparams->frametime * 5.0f);
+		l_FallVel = std::clamp(l_FallVel, -50.0f, 500.0f);
 	}
-
-	if (pparams->onground != 0)
+	else
+	{
 		l_FallVel = std::lerp(l_FallVel, 0, pparams->frametime * 25.0f);
+	}
 
 	if (g_bJumpState && pparams->onground != 0 && pparams->waterlevel == 0)
 	{
@@ -616,6 +662,61 @@ void V_Jump(ref_params_s* pparams, cl_entity_t* view)
 		pparams->viewangles[i] += gEngfuncs.pfnRandomFloat(-0.0055, 0.0055) * flFallVel * 0.05f;
 		view->angles[i] += gEngfuncs.pfnRandomFloat(-0.0055, 0.0055) * flFallVel * 0.05f;
 	}
+}
+
+Vector V_CamAnims(ref_params_s* pparams, cl_entity_s *view)
+{
+	static Vector l_CamAngle;
+	bool found = false;
+
+	if (!view->model || !view->model->name || g_iNumCamBones == -1)
+	{
+		for (int i = 0; i < 3; i++)
+		{
+			l_CamAngle[i] = std::lerp(l_CamAngle[i], 0, pparams->frametime * 25.0f);
+		}
+	}
+	else
+	{
+		for (int i = 0; i < g_iNumCamBones; i++)
+		{
+			if (strlen(g_camboneinf[i].pszModel) == 0)
+				break;
+
+			if (!stricmp(view->model->name, g_camboneinf[i].pszModel))
+			{
+				int boneidx = g_camboneinf[i].iBone;
+				Vector CamAngle = ((gHUD.m_vecBoneAngles[boneidx] - gHUD.m_vecDefaultBoneAngles[boneidx]) * 0.05f) * g_camboneinf[i].scale;
+
+				for (int j = 0; j < 3; j++)
+				{
+					l_CamAngle[j] = std::lerp(l_CamAngle[j], CamAngle[j], pparams->frametime * 25.0f);
+				}
+				found = true;
+				break;
+			}
+		}
+
+		if (!found)
+		{
+			for (int i = 0; i < 3; i++)
+			{
+				l_CamAngle[i] = std::lerp(l_CamAngle[i], 0, pparams->frametime * 25.0f);
+			}
+		}
+	}
+	VectorAdd(pparams->viewangles, l_CamAngle, pparams->viewangles);
+
+	return l_CamAngle;
+}
+
+void V_CalcCrosshairOfs(ref_params_s* pparams, Vector ofs)
+{
+	gHUD.crossspr.xofs = std::lerp(gHUD.crossspr.xofs, pparams->crosshairangle[1], pparams->frametime * 25.0f);
+	gHUD.crossspr.yofs = std::lerp(gHUD.crossspr.yofs, pparams->crosshairangle[0], pparams->frametime * 25.0f);
+
+	gHUD.crossspr.cxofs = ofs[1];
+	gHUD.crossspr.cyofs = ofs[0];
 }
 
 #define ORIGIN_BACKUP 64
@@ -813,15 +914,20 @@ void V_CalcNormalRefdef(struct ref_params_s* pparams)
 
 	V_CalcBob(pparams, 0, 0.75f); // right
 	V_CalcBob(pparams, 1, 1.50f);	// up
+	V_CalcBob(pparams, 2, 1.50f); // forward
 
 	V_CalcViewModelLag(pparams, view);
 	V_RetractWeapon(pparams, view);
 
 	for (i = 0; i < 3; i++)
 	{
-		view->origin[i] += viewbob.bob[0] * 0.33 * pparams->right[i];
-		view->origin[i] += viewbob.bob[1] * 0.17 * pparams->up[i];
+		view->origin[i] += viewbob.bob[0] * 0.10 * pparams->right[i];
+		view->origin[i] += viewbob.bob[1] * 0.04 * pparams->up[i];
+		view->origin[i] += fabs(viewbob.bob[2]) * 0.06 * pparams->forward[i];
 	}
+
+	pparams->viewangles[1] += viewbob.bob[0] * 0.08;
+	pparams->viewangles[0] += viewbob.bob[1] * 0.02;
 
 	// pushing the view origin down off of the same X/Z plane as the ent's origin will give the
 	// gun a very nice 'shifting' effect when the player looks up/down. If there is a problem
@@ -865,6 +971,10 @@ void V_CalcNormalRefdef(struct ref_params_s* pparams)
 
 	V_Jump(pparams, view);
 	V_CalcViewAngle(pparams, view);
+
+	Vector ofs1 = V_CamAnims(pparams, view);
+	Vector ofs2 = (punchangles[0] + punchangles[1]) * 1.2f + InvPitch(cl_jumpangle) / 3.0f;
+	V_CalcCrosshairOfs(pparams, ofs1 + ofs2);
 
 	VectorAdd(pparams->viewangles, InvPitch(cl_jumpangle) / 3.0f, pparams->viewangles);
 	VectorAdd(view->angles, cl_jumpangle, view->angles);
@@ -1816,9 +1926,6 @@ void DLLEXPORT V_CalcRefdef(struct ref_params_s* pparams)
 	if (pparams->paused == 0)
 	{
 		gHUD.m_flAbsTime += pparams->frametime;
-	
-		gHUD.crossspr.xofs = std::lerp(gHUD.crossspr.xofs, pparams->crosshairangle[1], pparams->frametime * 10.0f);
-		gHUD.crossspr.yofs = std::lerp(gHUD.crossspr.yofs, pparams->crosshairangle[0], pparams->frametime * 10.0f);
 	}
 
 	Fmod_Think(pparams);
@@ -1936,14 +2043,16 @@ void V_Init()
 	v_centermove = gEngfuncs.pfnRegisterVariable("v_centermove", "0.15", 0);
 	v_centerspeed = gEngfuncs.pfnRegisterVariable("v_centerspeed", "500", 0);
 
-	cl_bobcycle = gEngfuncs.pfnRegisterVariable("cl_bobcycle", "0.8", 0); // best default for my experimental gun wag (sjb)
-	cl_bob = gEngfuncs.pfnRegisterVariable("cl_bob", "0.01", 0);		  // best default for my experimental gun wag (sjb)
+	cl_bobcycle = gEngfuncs.pfnRegisterVariable("cl_bobcycle", "0.5", 0); 
+	cl_bob = gEngfuncs.pfnRegisterVariable("cl_bob", "0.01", 0);
 	cl_bobup = gEngfuncs.pfnRegisterVariable("cl_bobup", "0.5", 0);
 	cl_waterdist = gEngfuncs.pfnRegisterVariable("cl_waterdist", "4", 0);
 	cl_chasedist = gEngfuncs.pfnRegisterVariable("cl_chasedist", "112", 0);
 
 	cl_viewlagscale = gEngfuncs.pfnRegisterVariable("cl_viewlagscale", "2", FCVAR_ARCHIVE);
 	cl_viewlagspeed = gEngfuncs.pfnRegisterVariable("cl_viewlagspeed", "5", FCVAR_ARCHIVE);
+
+	V_GetCamBoneInfo();
 }
 
 

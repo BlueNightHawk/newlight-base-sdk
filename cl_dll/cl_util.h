@@ -24,7 +24,7 @@
 
 void TRI_SprDrawGeneric(int frame, int x, int y, const Rect* prc, bool changepos = true);
 void TRI_SprDrawAdditive(int frame, int x, int y, const Rect* prc, bool changepos = true);
-void TRI_SprSet(HSPRITE spr, int r, int g, int b);
+void TRI_SprSet(HSPRITE spr, int r, int g, int b, int a = 255);
 void TRI_FillRGBA(int x, int y, int width, int height, int r, int g, int b, int a);
 
 // Macros to hook function calls into the HUD object

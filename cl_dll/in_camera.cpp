@@ -612,11 +612,18 @@ void CAM_EndDistance()
 	iMouseInUse = false;
 }
 
+bool CL_IsThirdPersonEngine()
+{
+	return static_cast<bool>(cam_thirdperson || (0 != g_iUser1 && (g_iUser2 == gEngfuncs.GetLocalPlayer()->index)));
+}
+
 int DLLEXPORT CL_IsThirdPerson()
 {
 	//	RecClCL_IsThirdPerson();
 
-	return static_cast<int>(cam_thirdperson || (0 != g_iUser1 && (g_iUser2 == gEngfuncs.GetLocalPlayer()->index)));
+	// Add a check for gHUD.m_bThirdPersonHack to make the engine think we are in thirdperson mode
+	// so that we can override the flashlight flag later in HUD_AddEntity
+	return static_cast<int>(CL_IsThirdPersonEngine() || gHUD.m_bThirdPersonHack);
 }
 
 void DLLEXPORT CL_CameraOffset(float* ofs)

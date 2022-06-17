@@ -62,6 +62,12 @@ void IN_Commands();
 void TriHud_Init();
 void TriHUD_VidInit();
 
+bool ScreenGlow_Init();
+bool ScreenGlow_VidInit();
+void RenderScreenGlow(void);
+
+void DrawCrosshair();
+
 /*
 ================================
 HUD_GetHullBounds
@@ -174,6 +180,7 @@ int DLLEXPORT HUD_VidInit()
 	VGui_Startup();
 
 	TriHUD_VidInit();
+	ScreenGlow_VidInit();
 
 	return 1;
 }
@@ -194,6 +201,8 @@ void DLLEXPORT HUD_Init()
 	InitInput();
 	gHUD.Init();
 	Scheme_Init();
+
+	ScreenGlow_Init();
 }
 
 
@@ -209,6 +218,8 @@ redraw the HUD.
 int DLLEXPORT HUD_Redraw(float time, int intermission)
 {
 	//	RecClHudRedraw(time, intermission);
+
+	RenderScreenGlow();
 
 	gHUD.Redraw(time, 0 != intermission);
 
@@ -265,6 +276,9 @@ void DLLEXPORT HUD_Frame(double time)
 {
 	//	RecClHudFrame(time);
 	gHUD.m_binMainMenu = (((unsigned int)gEngfuncs.GetLocalPlayer()) <= 4098 && gEngfuncs.GetAbsoluteTime() - gHUD.r_params.time > 2.0f) != 0;
+
+	// Tell engine we are in "thirdperson" mode
+	gHUD.m_bThirdPersonHack = true;
 
 	Fmod_Update();
 

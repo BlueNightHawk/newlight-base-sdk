@@ -115,7 +115,9 @@ TYPEDESCRIPTION CBasePlayer::m_playerSaveData[] =
 		DEFINE_FIELD(CBasePlayer, m_iHideHUD, FIELD_INTEGER),
 		DEFINE_FIELD(CBasePlayer, m_iFOV, FIELD_INTEGER),
 
-		DEFINE_ARRAY(CBasePlayer, m_fmodSaveName, FIELD_CHARACTER, FMOD_SAVE_LENGTH)
+		DEFINE_ARRAY(CBasePlayer, m_fmodSaveName, FIELD_CHARACTER, FMOD_SAVE_LENGTH),
+
+		DEFINE_FIELD(CBasePlayer, m_flNextAttack, FIELD_FLOAT)
 
 		//DEFINE_FIELD( CBasePlayer, m_fDeadTime, FIELD_FLOAT ), // only used in multiplayer games
 		//DEFINE_FIELD( CBasePlayer, m_fGameHUDInitialized, FIELD_INTEGER ), // only used in multiplayer games
@@ -3004,7 +3006,7 @@ bool CBasePlayer::Restore(CRestore& restore)
 	// HACK:	This variable is saved/restored in CBaseMonster as a time variable, but we're using it
 	//			as just a counter.  Ideally, this needs its own variable that's saved as a plain float.
 	//			Barring that, we clear it out here instead of using the incorrect restored time value.
-	m_flNextAttack = UTIL_WeaponTimeBase();
+//	m_flNextAttack = UTIL_WeaponTimeBase();
 #endif
 
 	m_bResetViewEntity = true;

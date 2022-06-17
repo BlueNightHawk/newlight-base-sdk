@@ -509,6 +509,9 @@ typedef struct
 
 	float xofs;
 	float yofs;
+
+	float cxofs;
+	float cyofs;
 } crosspr_s;
 
 //
@@ -655,6 +658,13 @@ public:
 	bool m_bLevelChange;
 
 	crosspr_s crossspr;
+
+	Vector m_vecBoneAngles[128];
+	Vector m_vecDefaultBoneAngles[128];
+	Vector m_vecAttachmentDirs[4][3];
+
+    // This bool will tell the engine whether its "thirdperson" or not
+	bool m_bThirdPersonHack;
 };
 
 extern CHud gHUD;

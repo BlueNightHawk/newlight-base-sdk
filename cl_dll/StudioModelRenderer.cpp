@@ -59,6 +59,8 @@ void CStudioModelRenderer::Init()
 
 	m_pChromeSprite = IEngineStudio.GetChromeSprite();
 
+	r_mirrormodel = CVAR_CREATE("r_mirrormodel", "0", FCVAR_ARCHIVE);
+
 	IEngineStudio.GetModelCounters(&m_pStudioModelCount, &m_pModelsDrawn);
 
 	// Get pointers to engine data structures
@@ -984,6 +986,15 @@ void CStudioModelRenderer::StudioSetupBones()
 		bonematrix[1][3] = pos[i][1];
 		bonematrix[2][3] = pos[i][2];
 
+		if (m_pCurrentEntity->index == 9999)
+		{
+			Matrix3x4_AnglesFromMatrix(bonematrix, gHUD.m_vecDefaultBoneAngles[i]);
+		}
+		else if (gEngfuncs.GetViewModel() == m_pCurrentEntity)
+		{
+			Matrix3x4_AnglesFromMatrix(bonematrix, gHUD.m_vecBoneAngles[i]);
+		}
+
 		if (pbones[i].parent == -1)
 		{
 			if (0 != IEngineStudio.IsHardware())
@@ -1142,10 +1153,12 @@ void CStudioModelRenderer::StudioViewmodelEvent()
 	// fill attachments with interpolated origin
 	if (m_pStudioHeader->numattachments <= 0)
 	{
-		VectorCopy(m_pCurrentEntity->origin, m_pCurrentEntity->attachment[0]);
-		VectorCopy(m_pCurrentEntity->origin, m_pCurrentEntity->attachment[1]);
-		VectorCopy(m_pCurrentEntity->origin, m_pCurrentEntity->attachment[2]);
-		VectorCopy(m_pCurrentEntity->origin, m_pCurrentEntity->attachment[3]);
+		for (int i = 0; i < 4; i++)
+		{
+			Vector pos;
+			Matrix3x4_OriginFromMatrix((*m_protationmatrix), pos);
+			VectorCopy(pos, m_pCurrentEntity->attachment[i]);
+		}
 	}
 
 	if ((m_pCurrentEntity->curstate.effects & EF_MUZZLEFLASH) != 0)
@@ -1190,6 +1203,34 @@ void CStudioModelRenderer::StudioViewmodelEvent()
 	}
 }
 
+void CStudioModelRenderer::StudioStoreDefaultBoneAngles()
+{
+	cl_entity_s temp = *gEngfuncs.GetViewModel();
+	temp.index = 9999;
+	temp.curstate.sequence = 0;
+	temp.curstate.animtime = m_clTime;
+
+	m_pCurrentEntity = &temp;
+	m_pRenderModel = m_pCurrentEntity->model;
+	m_pStudioHeader = (studiohdr_t*)IEngineStudio.Mod_Extradata(m_pRenderModel);
+	IEngineStudio.StudioSetHeader(m_pStudioHeader);
+	IEngineStudio.SetRenderModel(m_pRenderModel);
+
+	StudioSetUpTransform(false);
+
+	if ((r_mirrormodel->value) != 0)
+	{
+		(*m_protationmatrix)[0][1] *= -1;
+		(*m_protationmatrix)[1][1] *= -1;
+		(*m_protationmatrix)[2][1] *= -1;
+	}
+
+	StudioSetupBones();
+	StudioSaveBones();
+
+	m_pCurrentEntity = gEngfuncs.GetViewModel();
+}
+
 /*
 ====================
 StudioDrawModel
@@ -1213,6 +1254,8 @@ bool CStudioModelRenderer::StudioDrawModel(int flags)
 		{
 			gHUD.m_flWeaponAnimTime = gHUD.m_flAbsTime = m_clTime;
 			gHUD.cachedviewmodel.curstate.sequence = -1;
+
+			StudioStoreDefaultBoneAngles();
 		}
 		else if (gHUD.m_bLevelChange && gHUD.cachedviewmodel.curstate.sequence != -1)
 		{
@@ -1260,6 +1303,13 @@ bool CStudioModelRenderer::StudioDrawModel(int flags)
 	IEngineStudio.SetRenderModel(m_pRenderModel);
 
 	StudioSetUpTransform(false);
+
+	if (m_pCurrentEntity == gEngfuncs.GetViewModel() && (r_mirrormodel->value) != 0)
+	{
+		(*m_protationmatrix)[0][1] *= -1;
+		(*m_protationmatrix)[1][1] *= -1;
+		(*m_protationmatrix)[2][1] *= -1;
+	}
 
 	if ((flags & STUDIO_RENDER) != 0)
 	{
@@ -1673,22 +1723,37 @@ StudioCalcAttachments
 
 ====================
 */
-void CStudioModelRenderer::StudioCalcAttachments()
+void CStudioModelRenderer::StudioCalcAttachments(void)
 {
 	int i;
 	mstudioattachment_t* pattachment;
-
-	if (m_pStudioHeader->numattachments > 4)
-	{
-		gEngfuncs.Con_DPrintf("Too many attachments on %s\n", m_pCurrentEntity->model->name);
-		exit(-1);
-	}
+	Vector forward, right, up, bonepos;
+	float d;
 
 	// calculate attachment points
 	pattachment = (mstudioattachment_t*)((byte*)m_pStudioHeader + m_pStudioHeader->attachmentindex);
 	for (i = 0; i < m_pStudioHeader->numattachments; i++)
 	{
 		VectorTransform(pattachment[i].org, (*m_plighttransform)[pattachment[i].bone], m_pCurrentEntity->attachment[i]);
+
+		bonepos[0] = (*m_plighttransform)[pattachment[i].bone][0][3];
+		bonepos[1] = (*m_plighttransform)[pattachment[i].bone][1][3];
+		bonepos[2] = (*m_plighttransform)[pattachment[i].bone][2][3];
+
+		VectorSubtract(m_pCurrentEntity->attachment[i], bonepos, forward); // get forward
+		VectorNormalize(forward);
+		right[0] = forward[2];
+		right[1] = -forward[0];
+		right[2] = forward[1];
+		d = DotProduct(forward, right);
+		VectorMA(right, -d, forward, right); // get right
+		VectorNormalize(right);
+		CrossProduct(right, forward, up); // get up
+
+		gHUD.m_vecAttachmentDirs[i][0] = forward;
+		gHUD.m_vecAttachmentDirs[i][1] = right;
+		gHUD.m_vecAttachmentDirs[i][2] = up;
+		// convert vectors to angles if needs and store in other place
 	}
 }
 
@@ -1810,7 +1875,15 @@ void CStudioModelRenderer::StudioRenderFinal_Hardware()
 			}
 
 			IEngineStudio.GL_SetRenderMode(rendermode);
+			if (m_pCurrentEntity == gEngfuncs.GetViewModel() && (r_mirrormodel->value) != 0)
+			{
+				gEngfuncs.pTriAPI->CullFace(TRI_NONE);
+			}
 			IEngineStudio.StudioDrawPoints();
+			if (m_pCurrentEntity == gEngfuncs.GetViewModel() && (r_mirrormodel->value) != 0)
+			{
+				gEngfuncs.pTriAPI->CullFace(TRI_FRONT);
+			}
 			IEngineStudio.GL_StudioDrawShadow();
 		}
 	}

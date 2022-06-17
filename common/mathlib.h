@@ -24,6 +24,7 @@ typedef float vec_t;
 
 typedef vec_t vec4_t[4]; // x,y,z,w
 typedef vec_t vec5_t[5];
+typedef vec_t matrix3x4[3][4];
 
 typedef short vec_s_t;
 typedef vec_s_t vec3s_t[3];
@@ -33,9 +34,20 @@ typedef vec_s_t vec5s_t[5];
 typedef int fixed4_t;
 typedef int fixed8_t;
 typedef int fixed16_t;
+
 #ifndef M_PI
-#define M_PI 3.14159265358979323846 // matches value in gcc v2 math.h
+#define M_PI (float)3.14159265358979323846
 #endif
+
+#ifndef M_PI2
+#define M_PI2 (float)6.28318530717958647692
+#endif
+
+#define M_PI_F ((float)(M_PI))
+#define M_PI2_F ((float)(M_PI2))
+
+#define RAD2DEG(x) ((float)(x) * (float)(180.f / M_PI))
+#define DEG2RAD(x) ((float)(x) * (float)(M_PI / 180.f))
 
 struct mplane_s;
 
@@ -108,6 +120,41 @@ int InvertMatrix(const float* m, float* out);
 
 int BoxOnPlaneSide(const Vector& emins, const Vector& emaxs, struct mplane_s* plane);
 float anglemod(float a);
+
+/*
+=================
+SinCos
+=================
+*/
+inline void SinCos(float radians, float* sine, float* cosine)
+{
+	_asm
+	{
+		fld	dword ptr [radians]
+		fsincos
+
+		mov edx, dword ptr [cosine]
+		mov eax, dword ptr [sine]
+
+		fstp dword ptr [edx]
+		fstp dword ptr [eax]
+	}
+}
+
+void Matrix3x4_VectorTransform(const matrix3x4 in, const float v[3], float out[3]);
+void Matrix3x4_VectorITransform(const matrix3x4 in, const float v[3], float out[3]);
+void Matrix3x4_VectorRotate(const matrix3x4 in, const float v[3], float out[3]);
+void Matrix3x4_VectorIRotate(const matrix3x4 in, const float v[3], float out[3]);
+void Matrix3x4_ConcatTransforms(matrix3x4 out, const matrix3x4 in1, const matrix3x4 in2);
+void Matrix3x4_SetOrigin(matrix3x4 out, float x, float y, float z);
+void Matrix3x4_OriginFromMatrix(const matrix3x4 in, float* out);
+void Matrix3x4_AnglesFromMatrix(const matrix3x4 in, Vector &out);
+void Matrix3x4_FromOriginQuat(matrix3x4 out, const vec4_t quaternion, const Vector origin);
+void Matrix3x4_CreateFromEntity(matrix3x4 out, const Vector angles, const Vector origin, float scale);
+void Matrix3x4_TransformPositivePlane(const matrix3x4 in, const Vector normal, float d, Vector out, float* dist);
+void Matrix3x4_Invert_Simple(matrix3x4 out, const matrix3x4 in1);
+void Matrix3x4_Transpose(matrix3x4 out, const matrix3x4 in1);
+
 
 
 

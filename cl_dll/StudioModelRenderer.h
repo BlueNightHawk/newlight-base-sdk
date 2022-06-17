@@ -96,6 +96,7 @@ public:
 	// Process movement of player
 	virtual void StudioProcessGait(entity_state_t* pplayer);
 
+	virtual void StudioStoreDefaultBoneAngles();
 public:
 	// Client clock
 	double m_clTime;
@@ -181,4 +182,6 @@ public:
 	// Concatenated bone and light transforms
 	float (*m_pbonetransform)[MAXSTUDIOBONES][3][4];
 	float (*m_plighttransform)[MAXSTUDIOBONES][3][4];
+
+	cvar_t* r_mirrormodel;
 };

@@ -89,6 +89,8 @@ bool CBasePlayerWeapon::DefaultReload(int iClipSize, int iAnim, float fDelay, in
 
 	m_fInReload = true;
 
+	m_iNextClipSize = iClipSize;
+
 	m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + 3;
 	return true;
 }
@@ -116,11 +118,10 @@ bool CanAttack(float attack_time, float curtime, bool isPredicted)
 
 void CBasePlayerWeapon::ItemPostFrame()
 {
-	if ((m_fInReload) && (m_pPlayer->m_flNextAttack <= UTIL_WeaponTimeBase()))
+	if ((m_fInReload) && (m_pPlayer->m_flNextAttack <= UTIL_WeaponTimeBase()) && m_iNextClipSize != -1)
 	{
 		// complete the reload.
-		int j = V_min(iMaxClip() - m_iClip, m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType]);
-
+		int j = V_min(m_iNextClipSize - m_iClip, m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType]);
 		// Add them to the clip
 		m_iClip += j;
 		m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] -= j;
@@ -128,6 +129,7 @@ void CBasePlayerWeapon::ItemPostFrame()
 		m_pPlayer->TabulateAmmo();
 
 		m_fInReload = false;
+		m_iNextClipSize = -1;
 	}
 
 	if ((m_pPlayer->pev->button & IN_ATTACK) == 0)

@@ -62,7 +62,7 @@ bool CGlock::GetItemInfo(ItemInfo* p)
 	p->iMaxAmmo1 = _9MM_MAX_CARRY;
 	p->pszAmmo2 = NULL;
 	p->iMaxAmmo2 = -1;
-	p->iMaxClip = GLOCK_MAX_CLIP;
+	p->iMaxClip = GLOCK_MAX_CLIP + 1;
 	p->iSlot = 1;
 	p->iPosition = 0;
 	p->iFlags = 0;
@@ -166,7 +166,7 @@ void CGlock::Reload()
 	if (m_iClip == 0)
 		iResult = DefaultReload(17, GLOCK_RELOAD, 1.5);
 	else
-		iResult = DefaultReload(17, GLOCK_RELOAD_NOT_EMPTY, 1.5);
+		iResult = DefaultReload(18, GLOCK_RELOAD_NOT_EMPTY, 1.5);
 
 	if (iResult)
 	{

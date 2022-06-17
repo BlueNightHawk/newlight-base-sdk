@@ -148,8 +148,8 @@ void TRI_SprDrawGeneric(int frame, int x, int y, const Rect* prc, bool changepos
 		TRI_SprAdjustSize(&x, &y, &w, &h, changepos);
 		x = (ScreenWidth - w) / 2;
 		y = (ScreenHeight - h) / 2;
-		x -= gHUD.crossspr.xofs * 10.0f;
-		y -= gHUD.crossspr.yofs * 10.0f;
+		x -= (gHUD.crossspr.xofs * 10.0f) - (gHUD.crossspr.cxofs * 10.0F);
+		y -= (gHUD.crossspr.yofs * 10.0f) + (gHUD.crossspr.cyofs * 10.0F);
 	}
 	else
 		TRI_SprAdjustSize(&x, &y, &w, &h);
@@ -166,10 +166,10 @@ void TRI_SprDrawAdditive(int frame, int x, int y, const Rect* prc, bool changepo
 	gEngfuncs.pTriAPI->RenderMode(kRenderNormal);
 }
 
-void TRI_SprSet(HSPRITE spr, int r, int g, int b)
+void TRI_SprSet(HSPRITE spr, int r, int g, int b, int a)
 {
 	TRI_pModel = (model_s*)gEngfuncs.GetSpritePointer(spr);
-	gEngfuncs.pTriAPI->Color4ub(r, g, b, 255);
+	gEngfuncs.pTriAPI->Color4ub(r, g, b, a);
 }
 
 void TRI_FillRGBA(int x, int y, int width, int height, int r, int g, int b, int a)
@@ -186,4 +186,26 @@ void SetCrosshair(HSPRITE hspr, Rect rc, int r, int g, int b)
 	gHUD.crossspr.g = g;
 	gHUD.crossspr.b = b;
 }
+
+void DrawCrosshair()
+{
+	if (gHUD.crossspr.spr != 0)
+	{
+		static float oldtime = 0;
+		float flTime = gEngfuncs.GetClientTime();
+
+		int y = ScreenHeight;
+		int x = ScreenWidth;
+
+		int a = (int)(CVAR_GET_FLOAT("crosshair") * 255);
+
+		if (oldtime != flTime)
+		{
+			SPR_Set(gHUD.crossspr.spr, 128, 128, 128, a);
+			SPR_DrawAdditive(0, x, y, &gHUD.crossspr.rc, false);
+		}
+		oldtime = flTime;
+	}
+}
+
 

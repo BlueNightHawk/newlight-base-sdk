@@ -353,6 +353,8 @@ public:
 	// hle time creep vars
 	float m_flPrevPrimaryAttack;
 	float m_flLastFireTime;
+
+	int m_iNextClipSize;
 };
 
 

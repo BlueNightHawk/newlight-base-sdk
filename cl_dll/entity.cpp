@@ -16,8 +16,6 @@
 
 #include "particleman.h"
 
-#include "PlatformHeaders.h"
-#include <gl/GL.h>
 extern IParticleMan* g_pParticleMan;
 
 void Game_AddObjects();
@@ -25,6 +23,59 @@ void Game_AddObjects();
 extern Vector v_origin;
 
 bool g_iAlive = true;
+
+bool CL_IsThirdPersonEngine();
+	/*
+========================
+DrawFlashlight
+========================
+*/
+void DrawFlashlight()
+{
+	Vector forward, vecSrc, vecEnd, origin, angles;
+	Vector view_ofs;
+
+	pmtrace_t tr;
+	cl_entity_t* pl = gEngfuncs.GetLocalPlayer();
+	int idx = pl->index;
+
+	// Get our exact viewangles from engine
+	gEngfuncs.GetViewAngles((float*)angles);
+	
+	// Get view origin offset
+	gEngfuncs.pEventAPI->EV_LocalPlayerViewheight(view_ofs);
+
+	AngleVectors(angles, forward, nullptr, nullptr);
+
+	VectorCopy(pl->origin, vecSrc);
+	VectorAdd(vecSrc, view_ofs, vecSrc);
+
+	VectorMA(vecSrc, 8192, forward, vecEnd);
+
+	gEngfuncs.pEventAPI->EV_SetUpPlayerPrediction(0, 1);
+
+	// Store off the old count
+	gEngfuncs.pEventAPI->EV_PushPMStates();
+
+	// Now add in all of the players.
+	gEngfuncs.pEventAPI->EV_SetSolidPlayers(idx - 1);
+
+	gEngfuncs.pEventAPI->EV_SetTraceHull(2);
+	gEngfuncs.pEventAPI->EV_PlayerTrace(vecSrc, vecEnd, PM_STUDIO_BOX | PM_GLASS_IGNORE, -1, &tr);
+
+	gEngfuncs.pEventAPI->EV_PopPMStates();
+
+	dlight_t* dl = gEngfuncs.pEfxAPI->CL_AllocDlight(idx); // Create the flashlight using the player's index as key
+	if (dl)
+	{
+		dl->origin = tr.endpos;
+		dl->color = {255, 255, 255};
+		dl->radius = 90; // Size of the flashlight
+		dl->decay = 512; // Flashlight fade speed
+		dl->die = gEngfuncs.GetClientTime() + 0.1f;
+	}
+}
+
 
 /*
 ========================
@@ -41,6 +92,22 @@ int DLLEXPORT HUD_AddEntity(int type, struct cl_entity_s* ent, const char* model
 	case ET_NORMAL:
 		break;
 	case ET_PLAYER:
+	{
+		cl_entity_s* ent = gEngfuncs.GetLocalPlayer();
+		// Remove flashlight flag before the info reaches the engine
+		if (ent && (ent->curstate.effects & EF_DIMLIGHT) != 0)
+		{
+			ent->curstate.effects &= ~EF_DIMLIGHT;
+			// Call the function that will draw our custom flashlight
+			DrawFlashlight();
+		}
+		// Stop telling the engine its in "thirdperson" mode
+		gHUD.m_bThirdPersonHack = false;
+		// Don't draw the player if we are in firstperson mode
+		if (!CL_IsThirdPersonEngine())
+			return 0;
+	}
+	break;
 	case ET_BEAM:
 	case ET_TEMPENTITY:
 	case ET_FRAGMENTED:
@@ -309,10 +376,6 @@ void DLLEXPORT HUD_CreateEntities()
 	Beams();
 #endif
 
-	// Remove noclip ghosting
-	glClear(GL_COLOR_BUFFER_BIT);
-	glClearColor(0, 0, 0, 0);
-
 	// Add in any game specific objects
 	Game_AddObjects();
 
@@ -331,9 +394,6 @@ fired during this frame, handle the event by it's tag ( e.g., muzzleflash, sound
 void DLLEXPORT HUD_StudioEvent(const struct mstudioevent_s* event, const struct cl_entity_s* entity)
 {
 	//	RecClStudioEvent(event, entity);
-
-	bool iMuzzleFlash = true;
-
 	bool bMuzlleflashLight = (event->event > 5000 && event->event < 6000 && (event->event != 5002 && event->event != 5004)) ? true : false;
 
 	if (bMuzlleflashLight)
@@ -358,20 +418,16 @@ void DLLEXPORT HUD_StudioEvent(const struct mstudioevent_s* event, const struct 
 	switch (event->event)
 	{
 	case 5001:
-		if (iMuzzleFlash)
-			gEngfuncs.pEfxAPI->R_MuzzleFlash((float*)&entity->attachment[0], atoi(event->options));
+		gEngfuncs.pEfxAPI->R_MuzzleFlash((float*)&entity->attachment[0], atoi(event->options));
 		break;
 	case 5011:
-		if (iMuzzleFlash)
-			gEngfuncs.pEfxAPI->R_MuzzleFlash((float*)&entity->attachment[1], atoi(event->options));
+		gEngfuncs.pEfxAPI->R_MuzzleFlash((float*)&entity->attachment[1], atoi(event->options));
 		break;
 	case 5021:
-		if (iMuzzleFlash)
-			gEngfuncs.pEfxAPI->R_MuzzleFlash((float*)&entity->attachment[2], atoi(event->options));
+		gEngfuncs.pEfxAPI->R_MuzzleFlash((float*)&entity->attachment[2], atoi(event->options));
 		break;
 	case 5031:
-		if (iMuzzleFlash)
-			gEngfuncs.pEfxAPI->R_MuzzleFlash((float*)&entity->attachment[3], atoi(event->options));
+		gEngfuncs.pEfxAPI->R_MuzzleFlash((float*)&entity->attachment[3], atoi(event->options));
 		break;
 	case 5002:
 		gEngfuncs.pEfxAPI->R_SparkEffect((float*)&entity->attachment[0], atoi(event->options), -100, 100);

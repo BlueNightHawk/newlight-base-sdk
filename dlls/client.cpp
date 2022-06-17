@@ -606,6 +606,18 @@ void ClientCommand(edict_t* pEntity)
 		WRITE_COORD(0);
 		MESSAGE_END();
 	}
+	else if (FStrEq(pcmd, "sendanim"))
+	{
+		if ( g_psv_cheats->value != 0 )
+		{
+			CBasePlayerWeapon* p = ((CBasePlayerWeapon*)player->m_pActiveItem);
+			if (p)
+			{
+				p->SendWeaponAnim(atoi(CMD_ARGV(1)), p->pev->body, false);
+				p->m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + 10.0f;
+			}
+		}
+	}
 	else
 	{
 		// tell the user they entered an unknown command
