@@ -665,6 +665,8 @@ public:
 
     // This bool will tell the engine whether its "thirdperson" or not
 	bool m_bThirdPersonHack;
+
+	int m_iFPS;
 };
 
 extern CHud gHUD;

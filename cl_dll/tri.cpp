@@ -27,6 +27,8 @@
 
 #include "r_studioint.h"
 
+#include "motionblur.h"
+
 void DrawCrosshair();
 
 extern engine_studio_api_t IEngineStudio;
@@ -51,8 +53,8 @@ bool ScreenGlow_Init()
 		return false;
 
 	// register the CVARs
-	gEngfuncs.pfnRegisterVariable("glow_blur_steps", "4", FCVAR_ARCHIVE);
-	gEngfuncs.pfnRegisterVariable("glow_darken_steps", "3", FCVAR_ARCHIVE);
+	gEngfuncs.pfnRegisterVariable("glow_blur_steps", "2", FCVAR_ARCHIVE);
+	gEngfuncs.pfnRegisterVariable("glow_darken_steps", "5", FCVAR_ARCHIVE);
 	gEngfuncs.pfnRegisterVariable("glow_strength", "0", FCVAR_ARCHIVE);
 	return true;
 }
@@ -262,6 +264,9 @@ Render any triangles with transparent rendermode needs here
 void DLLEXPORT HUD_DrawTransparentTriangles()
 {
 	//	RecClDrawTransparentTriangles();
+
+	RenderScreenGlow();
+	gBlur.DrawBlur();
 
 	if (g_pParticleMan)
 		g_pParticleMan->Update();

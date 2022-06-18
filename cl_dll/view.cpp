@@ -478,7 +478,9 @@ void V_CalcViewAngle(struct ref_params_s* pparams, cl_entity_s *view)
 	AngleVectors(InvPitch(view->angles), forward, right, up);	
 
 	view->angles[PITCH] -= fabs(l_pitch) * 1.5f;
-	view->origin = view->origin - forward * (fabs(l_pitch) * 0.95f) + up * (fabs(l_pitch)*0.15f);
+	view->angles[ROLL] -= fabs(l_pitch) * 1.5f;
+	view->angles[YAW] += fabs(l_pitch) * 1.25f;
+	view->origin = view->origin - forward * (fabs(l_pitch) * 0.95f) + up * (fabs(l_pitch) * 0.15f) + right * (fabs(l_pitch) * 0.15f);
 }
 
 
@@ -914,7 +916,7 @@ void V_CalcNormalRefdef(struct ref_params_s* pparams)
 
 	V_CalcBob(pparams, 0, 0.75f); // right
 	V_CalcBob(pparams, 1, 1.50f);	// up
-	V_CalcBob(pparams, 2, 1.50f); // forward
+	V_CalcBob(pparams, 2, 1.00f); // forward
 
 	V_CalcViewModelLag(pparams, view);
 	V_RetractWeapon(pparams, view);
@@ -923,9 +925,9 @@ void V_CalcNormalRefdef(struct ref_params_s* pparams)
 	{
 		view->origin[i] += viewbob.bob[0] * 0.10 * pparams->right[i];
 		view->origin[i] += viewbob.bob[1] * 0.04 * pparams->up[i];
-		view->origin[i] += fabs(viewbob.bob[2]) * 0.06 * pparams->forward[i];
+		view->origin[i] += viewbob.bob[2] * 0.12 * pparams->forward[i];
 	}
-
+	view->angles[2] -= viewbob.bob[0] * 0.15f;
 	pparams->viewangles[1] += viewbob.bob[0] * 0.08;
 	pparams->viewangles[0] += viewbob.bob[1] * 0.02;
 

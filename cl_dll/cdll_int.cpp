@@ -43,6 +43,7 @@
 #include "hl_imgui.h"
 
 #include "fmod_manager.h"
+#include "motionblur.h"
 
 cl_enginefunc_t gEngfuncs;
 CHud gHUD;
@@ -64,9 +65,10 @@ void TriHUD_VidInit();
 
 bool ScreenGlow_Init();
 bool ScreenGlow_VidInit();
-void RenderScreenGlow(void);
 
 void DrawCrosshair();
+
+int GetFPS();
 
 /*
 ================================
@@ -181,6 +183,7 @@ int DLLEXPORT HUD_VidInit()
 
 	TriHUD_VidInit();
 	ScreenGlow_VidInit();
+	gBlur.InitScreen();
 
 	return 1;
 }
@@ -201,7 +204,8 @@ void DLLEXPORT HUD_Init()
 	InitInput();
 	gHUD.Init();
 	Scheme_Init();
-
+	gBlur.Init();
+	
 	ScreenGlow_Init();
 }
 
@@ -218,8 +222,6 @@ redraw the HUD.
 int DLLEXPORT HUD_Redraw(float time, int intermission)
 {
 	//	RecClHudRedraw(time, intermission);
-
-	RenderScreenGlow();
 
 	gHUD.Redraw(time, 0 != intermission);
 
@@ -279,6 +281,8 @@ void DLLEXPORT HUD_Frame(double time)
 
 	// Tell engine we are in "thirdperson" mode
 	gHUD.m_bThirdPersonHack = true;
+
+	gHUD.m_iFPS = GetFPS();
 
 	Fmod_Update();
 
